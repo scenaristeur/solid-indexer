@@ -1,0 +1,7 @@
+@prefix : <http://example.org/ns#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+<#this> a :Version ;
+    dct:created "2025-02-18T12:34:56Z"^^xsd:dateTime ;
+    :content "Texte de la note" ;
+    :previousVersion <versions/20250218T123455> .

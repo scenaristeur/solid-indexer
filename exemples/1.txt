@@ -1,0 +1,156 @@
+````~/dev/solid-indexer$ python solid_rag_query_function_calling.py
+test function_calling  Super ! Je peux t'aider à gérer tes **notes** sur un **Pod Sol** (Solid Pod) en tant qu'application ou service de gestion de données personnelles décentralisées. Voici comment je peux t'aider, avec plusieurs fonctionnalités possibles :
+
+---
+
+### **📌 Fonctionnalités disponibles**
+1. **Créer une note** :
+   - Tu me donnes un titre et le contenu, je le stocke dans ton Pod.
+   - *Exemple* :
+     `→ Créer une note "Todo list" avec "1. Faire les courses / 2. Appeler Paul"`
+     *Je génère un ID unique et le stocke sous forme JSON ou TTL.*
+
+2. **Modifier une note** :
+   - Je te propose la note existante, tu me dis ce que tu veux changer.
+   - *Exemple* :
+     `→ Modifier la note "Todo list" : J'ajoute "3. Terminer le rapport"`
+
+3. **Supprimer une note** :
+   - Je confirme la suppression avant de la supprimer physiquement (ou la marque en tant que "détruit").
+   - *Exemple* :
+     `→ Supprimer la note "Ancien projet X"`
+
+4. **Lister tes notes** :
+   - Je te montre toutes tes notes avec leurs métadonnées (ID, titre, date de création).
+   - *Exemple* :
+     `→ Lister mes notes`
+
+5. **Rechercher une note** :
+   - Par titre ou mot-clé à l'intérieur du texte.
+   - *Exemple* :
+     `→ Trouver toutes les notes contenant "rapport"`
+
+6. **Partager une note (public ou privé)** :
+   - Je génère un lien accessible via ton Pod pour partager ou limiter l'accès (avec ta permission).
+   - *Exemple* :
+     `→ Partager la note "Budget" avec Alice uniquement`
+
+7. **Gérer des tags/catégories** :
+   - Associer des balises pour organiser tes notes (ex: `#travail`, `#perso`).
+   - *Exemple* :
+     `→ Ajouter le tag `#urgent` à la note "Todo list"`
+
+8. **Noter/security** :
+   - Pour des notes sensibles, je peux t'aider à chiffrer les données (via le Pod Sol qui utilise le WebID/SiOP).
+     *Ton Pod gère le chiffrement côté client, je ne vois pas les données brutes.*
+
+---
+
+### **🔒 Comment ça marche techniquement ?**
+Ton Pod est un serveur décentralisé (ex: [SpruceID](https://spruceid.com/), [Solid Cloud](https://solidproject.org/)) qui stocke tes données. Je t'interagis via des requêtes HTTP (ex: `PUT/GET` sur `https://ton-pod.com/data/notes/`), et je génère des ID conformes au standard **Solid**.
+
+---
+### **🚀 Exemple concret**
+1. **Tu** : *"Créer une note 'Réunion 10/11' avec 'Points : API, budget' et tag '#travail'."*
+2. **Moi** : *"ID généré : `did:web:ton-pod.com/#note-12345`. La note est sauvegardée sur ton Pod. Voici son lien : [lien-solid](https://ton-pod.com/#note-12345)."*
+
+---
+### **🔐 Précautions**
+- Je n’ai **pas accès** à tes données personnelles sauf ce que tu me transmet directement.
+- Pour supprimer une note, je te montre son contenu avant de le faire (par principe de sécurité).
+
+---
+### **🎯 Besoin d’aide ?**
+Dis-moi ce que tu veux faire avec tes notes, et je te guide pas à pas. Par exemple :
+- *"Montre-moi mes 3 dernières notes."*
+- *"Comment partager une note avec mon équipe ?"*
+
+Prêt à commencer ? 😊
+Assistant prêt. Tapez votre question (ou 'quit' pour quitter).
+
+Vous: créé la todo list : faire les courses, appeler Paul, ranger la terraasse, corriger les fautes de frappe
+
+Assistant: Voici une proposition de **Todo List** structurée pour ton Pod Solid dans un format lisible et actionnable, avec des options pour la gérer via des outils SolID (comme Pods, Notions, ou des applications compatibles comme **Poddy**).
+
+---
+
+### **📝 Todo List (Pod Solid)**
+**Statut** : [ ] *À faire* | [ ] *En cours* | [ ] *Terminé*
+**Priorité** : ⭐ *Urgente* | ⭐⭐ *Importante* | ⭐⭐⭐ *Normale*
+
+| **Tâche**               | **Priorité** | **Statut** | **Date Limite** | **Détails/Remarques**                     |
+|-------------------------|--------------|------------|------------------|--------------------------------------------|
+| Faire les courses       | ⭐⭐⭐        | [ ]         | *Aujourd’hui*      | Liste de course jointe (voir fichier)      |
+| Appeler Paul            | ⭐⭐          | [ ]         | *Cette semaine*   | Retenir notes de la dernière discussion     |
+| Ranger la terrasse      | ⭐⭐          | [ ]         | *Week-end*        | Nettoyer, trier les objets, stocker         |
+| Corriger les fautes     | ⭐⭐⭐        | [ ]         | *Demain*          | Fichier texte joint                         |
+
+---
+
+### **🔧 Comment la gérer dans ton Pod Solid ?**
+1. **Via une application dédiée** :
+   - **Poddy** ou **Notion** (si connecté à Solid) :
+     Crée un tableau Kanban ou une liste de tâches avec ces champs. Tu peux y ajouter des pièces jointes (liste de courses, exemples de fautes à corriger).
+     *Exemple de requête pour Poddy* :
+     ```sql
+     SELECT * FROM "TodoList" WHERE "Statut" = 'À faire' ORDER BY "Priorité" DESC
+     ```
+
+2. **Via un fichier JSON** (pour une intégration directe) :
+   ```json
+   {
+     "tasks": [
+       {
+         "description": "Faire les courses",
+         "priority": "normal",
+         "status": "todo",
+         "deadline": "today",
+         "notes": "Voici ma liste : [Lait, Pain, ...]"
+       },
+       {
+         "description": "Corriger les fautes",
+         "priority": "important",
+         "status": "todo",
+         "deadline": "tomorrow",
+         "file": "fautes_ortho.txt"
+       }
+     ]
+   }
+````
+
+3. **Avec un outil comme **HacknPlan\*\*\* (si tu utilises des Pods Solid comme base de données) :
+   - Stocke la liste dans un Pod et lie-la à des actions via l’API Solid.
+
+---
+
+### **📌 Conseils pour l’utiliser** :
+
+- **Ajoute des pièces jointes** : Liste de courses (fichier texte), exemple de texte à corriger (fichier `.doc` ou `.txt`).
+- **Automatise** :
+  - Utilise un **webhook** pour notifier quand une tâche est terminée (via un Pod comme **HacknPlan**).
+  - Active des **rappels** via un Pod comme **Reminders** (si compatible).
+- **Collaboratif** : Partage le Pod avec Paul pour qu’il voie la tâche "Appeler Paul" (si tu utilises un Pod public ou privé partagé).
+
+---
+
+### **📁 Exemple de pièces jointes à ajouter** (dans un Pod) :
+
+- **`courses.txt`** :
+  ```
+  - Produits laitiers : Lait, Yaourts, Fromage
+  - Féculents : Pain, Pâtes, Riz
+  - Légumes : Carottes, Courgettes
+  ```
+- **`fautes_ortho.txt`** :
+  ```
+  Exemple de texte avec des erreurs :
+  "Je veux aller au cinéma demian, mais il pleut désolément."
+  ```
+
+---
+
+Besoin d’aide pour configurer un outil spécifique ou automatiser la gestion ? Dis-moi quel type de Pod ou d’application tu utilises, et je peux te guider plus précisément ! 😊
+
+Vous:
+
+```

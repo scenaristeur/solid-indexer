@@ -1,0 +1,10 @@
+@prefix : <http://example.org/ns#> .
+@prefix solid: <http://www.w3.org/ns/solid/terms#> .
+
+:Resource a :Class .
+:hasVersion a :Property ; range :Version .
+:previousVersion a :Property ; range :Version .
+:versionOf a :Property ; range :Resource .
+:createdAt a :Property ; range xsd:dateTime .
+:status a :Property ; range :Status .
+:Status a :Class ; :hasValue "active", "deleted", "archived" .
