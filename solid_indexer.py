@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # reads variables from a .env file and sets them in os.environ
 
+from urllib.parse import urlparse
 
 # Configuration du logging
 
@@ -34,6 +35,7 @@ class SolidIndexer:
         """
         Initialise le client ChromaDB et crée/récupère une collection.
         """
+        self.base_domain = None
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
@@ -50,7 +52,22 @@ class SolidIndexer:
         self.public_session = requests.Session()
         # Ajouter ici vos en-têtes d'authentification Solid si nécessaire
         # self.session.headers.update({"Authorization": "Bearer votre_token"})
+
+        
+        # si on ne veut pas charger les url déjà scannées
+        #self.load_visited()
         self.visited_urls = set()  # pour éviter les cycles
+
+    def save_visited(self, filename="visited.json"):
+        with open(filename, "w") as f:
+            json.dump(list(self.visited_urls), f)
+
+    def load_visited(self, filename="visited.json"):
+        try:
+            with open(filename, "r") as f:
+                self.visited_urls = set(json.load(f))
+        except FileNotFoundError:
+            self.visited_urls = set()
 
     def fetch_headers(self, url):
         """
@@ -240,7 +257,7 @@ class SolidIndexer:
                 entities.add(str(o))
         return entities
 
-    def index_rdf_resource(self, uri, content, headers, mime_type):
+    def index_rdf_resource(self, uri, content, headers, mime_type, depth=0, max_depth=3):
         """
         Parse une ressource RDF (ttl, json-ld, n3, etc.) et indexe ses triplets sous forme de texte.
         On crée un document textuel par entité (sujet) qui décrit ses propriétés.
@@ -297,6 +314,8 @@ class SolidIndexer:
                 metadatas=[meta]
             )
             logger.info(f"Entité indexée : {entity}")
+            if entity != uri and entity.startswith(('http://', 'https://')) and entity.startswith(self.base_domain):
+                self.process_resource(entity, depth+1, max_depth)
 
         # Option : on pourrait aussi indexer le graphe complet comme un document texte
         # (mais on se concentre sur les entités)
@@ -309,6 +328,7 @@ class SolidIndexer:
         - Si c'est un fichier texte, on l'indexe.
         - On évite les cycles via self.visited_urls.
         """
+        logger.info(f"Traitement de {uri} (profondeur {depth})")
         if uri in self.visited_urls or depth > max_depth:
             return
         self.visited_urls.add(uri)
@@ -368,11 +388,11 @@ class SolidIndexer:
         content_type = headers.get('content-type', '').split(';')[0].strip()
         etag = headers.get('etag', etag)
         last_modified = headers.get('last-modified', last_modified)
-
+        logger.info(f"content: {content} ")
         # Détecter si c'est un conteneur (via Link header ou fin par /)
         link = headers.get('link', '')
         is_container = 'rel="type"' in link and 'ldp#Container' in link or uri.endswith('/')
-
+        logger.info(f"is_container: {is_container} ")
         if is_container:
             # C'est un conteneur : on liste son contenu à partir du body RDF
             self.list_container(uri, depth, content)
@@ -419,26 +439,42 @@ class SolidIndexer:
         Si content est fourni, on l'utilise (c'est le body RDU du conteneur). Sinon, on le télécharge.
         """
         logger.info(f"Listage du conteneur {uri}")
-        if content is None:
             # Télécharger la représentation du conteneur (généralement en turtle)
-            content, headers = self.fetch_resource(uri, accept="text/turtle")
-            if content is None:
-                return
+        content, headers = self.fetch_resource(uri, accept_header="text/turtle")
+        if content is None or headers is None:
+            logger.error(f"Impossible de récupérer le contenu du conteneur {uri}")
+            return
+        # Vérifier le type de contenu
+        content_type = headers.get('content-type', '').split(';')[0].strip()
+        if 'text/turtle' not in content_type and 'application/ld+json' not in content_type and 'text/n3' not in content_type:
+            logger.warning(f"Le conteneur {uri} n'est pas en RDF (type: {content_type}), on ignore son contenu")
+            return
+
 
         # Parser le RDF pour trouver les membres (ldp:contains)
         graph = Graph()
         try:
-            graph.parse(data=content, format='turtle')
+            # Décoder le contenu en string si c'est bytes (optionnel)
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+            graph.parse(data=content, format='turtle', publicID=uri)
+            logger.info(f"Nombre de triplets total: {len(graph)}")
+            count_subject = len(list(graph.triples((URIRef(uri), None, None))))
+            logger.info(f"Triplets avec sujet {uri}: {count_subject}")
         except Exception as e:
             logger.error(f"Erreur parsing du conteneur {uri}: {e}")
             return
 
         # Chercher les triplets <uri> ldp:contains ?member
         ldp = rdflib.Namespace("http://www.w3.org/ns/ldp#")
+        logger.info(f"ldp: {ldp}")
         for member in graph.objects(URIRef(uri), ldp.contains):
             member_uri = str(member)
-            # Traiter chaque membre (récursivement)
-            self.process_resource(member_uri, depth+1)
+            if member_uri.startswith(self.base_domain):
+                logger.info(f"Membre trouvé : {member_uri}")
+                self.process_resource(member_uri, depth+1)
+            else:
+                logger.debug(f"Membre hors domaine ignoré : {member_uri}")
 
         # Alternative : si le conteneur utilise un vocabulaire différent (ex: schema.org), on pourrait chercher d'autres prédicats.
         # On peut aussi simplement suivre tous les liens RDF de type Resource.
@@ -449,7 +485,11 @@ class SolidIndexer:
         Lance l'indexation à partir d'une URL de départ (pod ou dossier).
         """
         logger.info(f"Démarrage de l'indexation depuis {start_url}")
+        parsed = urlparse(start_url)
+        self.base_domain = f"{parsed.scheme}://{parsed.netloc}"
+        logger.info(f"Démarrage de l'indexation depuis {start_url} (domaine: {self.base_domain})")
         self.process_resource(start_url, depth=0, max_depth=5)
+        self.save_visited()
 
 # if __name__ == "__main__":  # remarquez les doubles underscores
 #     indexer = SolidIndexer(collection_name="mon_pod", persist_directory="./chroma_storage") # À remplacer par l'URL de votre pod ou dossier Solid
