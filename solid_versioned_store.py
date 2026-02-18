@@ -5,6 +5,9 @@ import rdflib
 from rdflib import Graph, URIRef, Literal, Namespace
 from urllib.parse import urljoin, urlparse
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Namespaces
 EX = Namespace("http://example.org/ns#")
@@ -12,13 +15,11 @@ DCT = Namespace("http://purl.org/dc/terms/")
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 
 class SolidVersionedStore:
-    def __init__(self, session, base_container):
-        """
-        session : instance de SolidAuthenticatedSession
-        base_container : URI du conteneur racine pour les ressources (ex: http://localhost:3000/david/notes/)
-        """
+    def __init__(self, session, base_container, webid):
         self.session = session
         self.base_container = base_container.rstrip('/') + '/'
+        self.webid = webid
+        logger.info(f"Store initialisé avec WebID: {webid}")
 
     def _timestamp(self):
         return datetime.utcnow().strftime("%Y%m%dT%H%M%S")
@@ -35,13 +36,62 @@ class SolidVersionedStore:
         """URI d'une version spécifique."""
         return urljoin(self._versions_container(resource_uri), timestamp)
 
+    def _set_acl(self, uri):
+        """
+        Crée un fichier ACL pour la ressource/dossier uri.
+        Utilise le modèle fourni.
+        """
+        acl_template = """@prefix : <#>.
+@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix c: <{webid}>.
+
+:ControlReadWrite
+    a acl:Authorization;
+    acl:accessTo <./>;
+    acl:agent <{webid}>;
+    acl:default <./>;
+    acl:mode acl:Control, acl:Read, acl:Write.
+
+:Read
+    a acl:Authorization;
+    acl:accessTo <./>;
+    acl:agentClass foaf:Agent;
+    acl:default <./>;
+    acl:mode acl:Read.
+"""
+        acl_content = acl_template.format(webid=self.webid)
+        acl_uri = uri.rstrip('/') + '.acl'
+        resp = self.session.request('PUT', acl_uri, data=acl_content,
+                                    headers={'Content-Type': 'text/turtle'})
+        if resp.status_code in (200, 201, 205):  # 205 Reset Content est aussi un succès
+            logger.info(f"✅ ACL créé pour {uri}")
+        else:
+            logger.error(f"❌ Échec création ACL pour {uri}: {resp.status_code}")
+
+    def _ensure_container(self, container_uri):
+        """Crée un conteneur LDP s'il n'existe pas, avec ACL."""
+        resp = self.session.request('HEAD', container_uri)
+        if resp.status_code == 404:
+            logger.info(f"Création du conteneur {container_uri}")
+            resp = self.session.request('PUT', container_uri,
+                headers={'Content-Type': 'text/turtle',
+                         'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+            if resp.status_code in (200, 201):
+                logger.info(f"✅ Conteneur {container_uri} créé")
+                self._set_acl(container_uri)
+            else:
+                logger.error(f"❌ Échec création conteneur {container_uri}: {resp.status_code}")
+        elif resp.status_code != 200:
+            logger.warning(f"HEAD sur {container_uri} a retourné {resp.status_code}")
+
     def create_resource(self, name, content, rdf_type=EX.Note, **extra_triples):
         """
-        Crée une nouvelle ressource logique et sa première version.
+        Crée une nouvelle ressource versionnée.
         - name : slug (ex: "ma-note")
-        - content : contenu textuel (ou graphe RDF ?)
-        - rdf_type : type RDF de la ressource
-        - extra_triples : dictionnaire de propriétés supplémentaires à ajouter à la ressource principale
+        - content : contenu textuel de la première version
+        - rdf_type : type RDF de la ressource (par défaut Note)
+        - extra_triples : dictionnaire de propriétés à ajouter à la ressource logique (tags, etc.)
         Retourne l'URI de la ressource logique.
         """
         resource_uri = self._resource_uri(name)
@@ -49,32 +99,60 @@ class SolidVersionedStore:
         timestamp = self._timestamp()
         version_uri = self._version_uri(resource_uri, timestamp)
 
-        # 1. Créer le conteneur de versions (si nécessaire)
-        # On peut faire un PUT sur le conteneur avec un LDP container
-        self._ensure_container(versions_container)
+        # 1. S'assurer que le conteneur de base existe
+        self._ensure_container(self.base_container)
 
-        # 2. Créer la version
-        version_graph = Graph()
-        version_graph.add((URIRef(version_uri), RDF.type, EX.Version))
-        version_graph.add((URIRef(version_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z', datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
-        version_graph.add((URIRef(version_uri), EX.content, Literal(content)))
-        version_graph.add((URIRef(version_uri), EX.versionOf, URIRef(resource_uri)))
-        # Ajouter d'autres triplets si besoin
-
-        # Sérialiser en Turtle
-        version_data = version_graph.serialize(format='turtle')
-        self.session.request('PUT', version_uri, data=version_data, headers={'Content-Type': 'text/turtle'})
-
-        # 3. Créer ou mettre à jour la ressource logique
-        # On va faire un PUT sur resource_uri avec un graphe contenant le type, latestVersion, et extra_triples
+        # 2. Créer la ressource logique en tant que conteneur (sans latestVersion pour l'instant)
         resource_graph = Graph()
         resource_graph.add((URIRef(resource_uri), RDF.type, rdf_type))
-        resource_graph.add((URIRef(resource_uri), EX.latestVersion, URIRef(version_uri)))
         for k, v in extra_triples.items():
             resource_graph.add((URIRef(resource_uri), EX[k], Literal(v)))
         resource_data = resource_graph.serialize(format='turtle')
-        self.session.request('PUT', resource_uri, data=resource_data, headers={'Content-Type': 'text/turtle'})
+        headers = {
+            'Content-Type': 'text/turtle',
+            'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'
+        }
+        resp = self.session.request('PUT', resource_uri, data=resource_data, headers=headers)
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec création conteneur {resource_uri}: {resp.status_code}")
+            return None
+        self._set_acl(resource_uri)
 
+        # 3. Créer le conteneur de versions à l'intérieur
+        self._ensure_container(versions_container)
+
+        # 4. Créer la première version
+        version_graph = Graph()
+        version_graph.add((URIRef(version_uri), RDF.type, EX.Version))
+        version_graph.add((URIRef(version_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
+                            datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
+        version_graph.add((URIRef(version_uri), EX.content, Literal(content)))
+        version_graph.add((URIRef(version_uri), EX.versionOf, URIRef(resource_uri)))
+        version_data = version_graph.serialize(format='turtle')
+        resp = self.session.request('PUT', version_uri, data=version_data,
+                                    headers={'Content-Type': 'text/turtle'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec création version {version_uri}: {resp.status_code}")
+            return None
+        # Optionnel : ACL pour la version (héritée du conteneur, donc pas nécessaire)
+
+        # 5. Mettre à jour la ressource logique avec le lien latestVersion
+        # On récupère le graphe actuel, on ajoute le triple, on remet
+        resp = self.session.request('GET', resource_uri, headers={'Accept': 'text/turtle'})
+        if resp.status_code != 200:
+            logger.error(f"Impossible de lire {resource_uri} pour mise à jour: {resp.status_code}")
+            return None
+        graph = Graph().parse(data=resp.text, format='turtle')
+        graph.add((URIRef(resource_uri), EX.latestVersion, URIRef(version_uri)))
+        new_data = graph.serialize(format='turtle')
+        resp = self.session.request('PUT', resource_uri, data=new_data,
+                                    headers={'Content-Type': 'text/turtle',
+                                             'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec mise à jour de {resource_uri} avec latestVersion: {resp.status_code}")
+            return None
+
+        logger.info(f"✅ Ressource créée : {resource_uri}")
         return resource_uri
 
     def update_resource(self, resource_uri, new_content):
@@ -82,10 +160,10 @@ class SolidVersionedStore:
         Met à jour une ressource existante en créant une nouvelle version.
         Retourne l'URI de la nouvelle version.
         """
-        # Récupérer la ressource logique pour connaître la dernière version
+        # 1. Récupérer la ressource logique pour connaître la dernière version
         resp = self.session.request('GET', resource_uri, headers={'Accept': 'text/turtle'})
         if resp.status_code != 200:
-            raise Exception(f"Ressource {resource_uri} introuvable")
+            raise Exception(f"Ressource {resource_uri} introuvable (code {resp.status_code})")
         graph = Graph().parse(data=resp.text, format='turtle')
 
         # Trouver la dernière version
@@ -96,12 +174,10 @@ class SolidVersionedStore:
         if not latest:
             raise Exception("Pas de version trouvée")
 
-        # Créer une nouvelle version
+        # 2. Créer une nouvelle version
         timestamp = self._timestamp()
         new_version_uri = self._version_uri(resource_uri, timestamp)
 
-        # Récupérer l'ancienne version (pour éventuellement copier des infos)
-        # On peut juste créer la nouvelle version avec un lien previousVersion
         version_graph = Graph()
         version_graph.add((URIRef(new_version_uri), RDF.type, EX.Version))
         version_graph.add((URIRef(new_version_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z')))
@@ -109,39 +185,49 @@ class SolidVersionedStore:
         version_graph.add((URIRef(new_version_uri), EX.versionOf, URIRef(resource_uri)))
         version_graph.add((URIRef(new_version_uri), EX.previousVersion, URIRef(latest)))
         version_data = version_graph.serialize(format='turtle')
-        self.session.request('PUT', new_version_uri, data=version_data, headers={'Content-Type': 'text/turtle'})
+        resp = self.session.request('PUT', new_version_uri, data=version_data,
+                                    headers={'Content-Type': 'text/turtle'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec création nouvelle version {new_version_uri}: {resp.status_code}")
+            return None
 
-        # Mettre à jour le lien latestVersion dans la ressource logique
-        # On fait un PATCH pour ne modifier que ce triple ? Plus simple : récupérer le graphe existant, le modifier et PUT
-        # Ici on va faire un PUT complet pour simplifier
-        # On pourrait faire un PATCH avec SPARQL Update, mais on va rester simple
+        # 3. Mettre à jour le lien latestVersion dans la ressource logique
+        # On récupère à nouveau le graphe (au cas où il aurait changé)
         resp = self.session.request('GET', resource_uri, headers={'Accept': 'text/turtle'})
         graph = Graph().parse(data=resp.text, format='turtle')
         # Supprimer l'ancien latestVersion et ajouter le nouveau
         graph.remove((URIRef(resource_uri), EX.latestVersion, None))
         graph.add((URIRef(resource_uri), EX.latestVersion, URIRef(new_version_uri)))
-        # Mettre à jour la date de modification si souhaité
         graph.set((URIRef(resource_uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z')))
         new_data = graph.serialize(format='turtle')
-        self.session.request('PUT', resource_uri, data=new_data, headers={'Content-Type': 'text/turtle'})
+        resp = self.session.request('PUT', resource_uri, data=new_data,
+                                    headers={'Content-Type': 'text/turtle',
+                                             'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec mise à jour ressource logique {resource_uri}: {resp.status_code}")
+            return None
 
+        logger.info(f"✅ Nouvelle version créée : {new_version_uri}")
         return new_version_uri
 
     def delete_resource(self, resource_uri):
         """
         Marque une ressource comme supprimée en créant une version spéciale et en mettant à jour le statut.
         """
-        # Créer une version "deleted" avec un contenu vide ou un marqueur
-        timestamp = self._timestamp()
-        version_uri = self._version_uri(resource_uri, timestamp)
-
-        # Récupérer la dernière version pour lier previousVersion
+        # Récupérer la dernière version
         resp = self.session.request('GET', resource_uri, headers={'Accept': 'text/turtle'})
+        if resp.status_code != 200:
+            raise Exception(f"Ressource {resource_uri} introuvable (code {resp.status_code})")
         graph = Graph().parse(data=resp.text, format='turtle')
+
         latest = None
         for s, p, o in graph.triples((URIRef(resource_uri), EX.latestVersion, None)):
             latest = str(o)
             break
+
+        # Créer une version "deleted"
+        timestamp = self._timestamp()
+        version_uri = self._version_uri(resource_uri, timestamp)
 
         version_graph = Graph()
         version_graph.add((URIRef(version_uri), RDF.type, EX.Version))
@@ -152,22 +238,21 @@ class SolidVersionedStore:
         if latest:
             version_graph.add((URIRef(version_uri), EX.previousVersion, URIRef(latest)))
         version_data = version_graph.serialize(format='turtle')
-        self.session.request('PUT', version_uri, data=version_data, headers={'Content-Type': 'text/turtle'})
+        resp = self.session.request('PUT', version_uri, data=version_data,
+                                    headers={'Content-Type': 'text/turtle'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec création version de suppression {version_uri}: {resp.status_code}")
+            return
 
-        # Mettre à jour la ressource logique : changer latestVersion et ajouter status=deleted
+        # Mettre à jour la ressource logique
         graph.set((URIRef(resource_uri), EX.latestVersion, URIRef(version_uri)))
         graph.add((URIRef(resource_uri), EX.status, EX.deleted))
-        # On peut aussi supprimer le contenu principal ? Non, on garde juste le statut.
+        graph.set((URIRef(resource_uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z')))
         new_data = graph.serialize(format='turtle')
-        self.session.request('PUT', resource_uri, data=new_data, headers={'Content-Type': 'text/turtle'})
-
-        # Optionnel : déplacer la ressource dans /historique ? On peut le faire mais cela change l'URI.
-        # On préfère garder l'URI et juste changer le statut.
-
-    def _ensure_container(self, container_uri):
-        """Crée un conteneur LDP s'il n'existe pas."""
-        # On peut faire un HEAD pour vérifier, sinon un PUT avec les bons headers
-        resp = self.session.request('HEAD', container_uri)
-        if resp.status_code == 404:
-            # Créer un conteneur BasicContainer
-            self.session.request('PUT', container_uri, headers={'Content-Type': 'text/turtle', 'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+        resp = self.session.request('PUT', resource_uri, data=new_data,
+                                    headers={'Content-Type': 'text/turtle',
+                                             'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+        if resp.status_code not in (200, 201):
+            logger.error(f"❌ Échec mise à jour après suppression {resource_uri}: {resp.status_code}")
+        else:
+            logger.info(f"✅ Ressource {resource_uri} marquée comme supprimée")

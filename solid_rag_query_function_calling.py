@@ -4,8 +4,13 @@ from solid_auth import SolidAuthenticatedSession
 import json
 from solid_versioned_store import SolidVersionedStore
 from openai import OpenAI
+import logging
 
 load_dotenv()
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Initialisation de la session Solid
 session = SolidAuthenticatedSession(
@@ -22,6 +27,31 @@ openai_client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 chat_model = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")
+
+system_prompt = """Tu es un assistant personnel qui gère des notes sur un pod Solid.
+Tu as accès à des fonctions pour créer, modifier, supprimer et lister des notes.
+Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note'.
+N'écris pas de longs discours : utilise les fonctions pour agir directement.
+Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
+Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
+"""
+messages = [{"role": "system", "content": system_prompt}]
+# # Exemple pour montrer l'utilisation correcte
+# example_messages = [
+#     {"role": "user", "content": "crée une note avec le titre 'Idées' et le contenu 'Acheter du lait'"},
+#     {"role": "assistant", "content": None, "tool_calls": [{
+#         "id": "12356789",
+#         "type": "function",
+#         "function": {
+#             "name": "create_note",
+#             "arguments": json.dumps({"title": "Idees", "content": "Acheter du lait", "tags": ""})
+#         }
+#     }]},
+#     {"role": "tool", "tool_call_id": "123456789", "name": "create_note", "content": "Note créée : http://localhost:3000/david/notes/Idees"},
+#     {"role": "assistant", "content": "J'ai créé la note 'Idées' pour vous. Vous pouvez la consulter à l'URI : http://localhost:3000/david/notes/Idees"},
+#     {"role": "user", "content": "Super, continuons"}
+# ]
+# messages.extend(example_messages)
 
 # Définition des fonctions disponibles
 functions = [
@@ -86,8 +116,6 @@ def call_function(name, args):
         return "Fonction inconnue"
 
 
-# Boucle de conversation
-messages = [{"role": "system", "content": "Tu es un assistant utile qui peut gérer des notes sur un pod Solid."}]
 
 # Dans la boucle de conversation, après avoir reçu la réponse du LLM, on vérifie s'il y a un appel de fonction
 # Exemple avec l'API OpenAI :
@@ -98,13 +126,15 @@ response = openai_client.chat.completions.create(
     function_call="auto"
 )
 
+logger.info(f"Réponse du LLM: {response.choices[0].message}")
+
 message = response.choices[0].message
 if message.function_call:
     function_name = message.function_call.name
     arguments = json.loads(message.function_call.arguments)
     result = call_function(function_name, arguments)
     # Dans call_function, après avoir fait l'opération, on réindexe
-    indexer.process_resource(uri, force=True)  # Il faudrait modifier process_resource pour accepter un flag force
+    #indexer.process_resource(uri, force=True)  # Il faudrait modifier process_resource pour accepter un flag force
     # Envoyer le résultat au LLM pour qu'il génère une réponse finale
     messages.append(message)  # message avec function_call
     messages.append({

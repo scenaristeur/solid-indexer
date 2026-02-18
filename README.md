@@ -3,6 +3,8 @@
 npm install -g @solid/community-server
 community-solid-server -c @css:config/file.json -f data/ --baseUrl http://192.168.1.107:3000
 
+login : http://localhost:3000/.account/login/password/
+
 ```
 
 python -m venv .venv

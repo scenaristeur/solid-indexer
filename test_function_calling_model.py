@@ -8,7 +8,7 @@ load_dotenv()
 # Simuler l'exécution de la fonction
 def get_weather(params):
     print("PARAMS", params)
-    location = params['location'].rsplit(',')[0] # pour les modèle qui précisent "Paris, France" comme mistralai/Mistral-Small-3.2-24B-Instruct-2506
+    location = params['location'].rsplit(',')[0] # pour les modèle qui précisent "Paris, France" comme mistralai/Mistral-Small-3.2-24B-Instruct-2506 ou openai/gpt-oss-120b
     print("location", location)
     # Une vraie implémentation irait chercher la météo
     if location == 'Lyon' :
