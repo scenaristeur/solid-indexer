@@ -154,6 +154,9 @@ def call_function(name, args):
     if name == "create_note":
         uri = store.create_note(args["title"], args["content"], tags=args.get("tags", ""))
         return f"Note créée : {uri}"
+    elif name == "read_note":
+        content = store.read_note(args["uri"])
+        return json.dumps(content) if content else "Échec suppression"
     elif name == "update_note":
         # adapter si update_note attend new_content et autres paramètres
         success = store.update_note(args["uri"], args["new_content"])
@@ -207,6 +210,8 @@ while True:
             "name": tool_call.function.name,
             "content": result
         })
+
+        logger.warn(messages)
         # Deuxième appel pour obtenir la réponse finale
         second_response = openai_client.chat.completions.create(
             model=chat_model,
