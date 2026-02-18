@@ -256,6 +256,7 @@ class SolidIndexer:
                 entities.add(str(s))
             if isinstance(o, URIRef) and str(o).startswith(('http://', 'https://')):
                 entities.add(str(o))
+        logger.debug(f"extract_rdf_entities: {entities}")
         return entities
 
     def index_rdf_resource(self, uri, content, headers, mime_type, depth=0, max_depth=3):
