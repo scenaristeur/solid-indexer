@@ -451,10 +451,21 @@ class SolidIndexer:
         logger.info(f"Démarrage de l'indexation depuis {start_url}")
         self.process_resource(start_url, depth=0, max_depth=5)
 
-if __name__ == "__main__":  # remarquez les doubles underscores
-    indexer = SolidIndexer(collection_name="mon_pod", persist_directory="./chroma_storage") # À remplacer par l'URL de votre pod ou dossier Solid
-    # start = "https://votre-pod.solidcommunity.net/"
-    # start = "http://localhost:3000/david/profile/card#me"
-    # start = "http://localhost:3000/david/"
-    start = "http://localhost:3000/david/holacratie/"
-    indexer.run(start)
+# if __name__ == "__main__":  # remarquez les doubles underscores
+#     indexer = SolidIndexer(collection_name="mon_pod", persist_directory="./chroma_storage") # À remplacer par l'URL de votre pod ou dossier Solid
+#     # start = "https://votre-pod.solidcommunity.net/"
+#     # start = "http://localhost:3000/david/profile/card#me"
+#     # start = "http://localhost:3000/david/"
+#     start = "http://localhost:3000/david/holacratie/"
+#     indexer.run(start)
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Indexeur incrémental pour pods Solid")
+    parser.add_argument("start_url", help="URL de départ (pod ou dossier) à indexer")
+    parser.add_argument("--collection", default="mon_pod", help="Nom de la collection ChromaDB (défaut: mon_pod)")
+    parser.add_argument("--persist", default="./chroma_storage", help="Répertoire de persistance ChromaDB (défaut: ./chroma_storage)")
+    args = parser.parse_args()
+
+    indexer = SolidIndexer(collection_name=args.collection, persist_directory=args.persist)
+    indexer.run(args.start_url)
