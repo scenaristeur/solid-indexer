@@ -21,3 +21,21 @@ python install -r requirements.txt
 2026-02-18 13:20:28,437 - INFO - Listage du conteneur http://localhost:3000/david/
 
 ```
+
+# query
+
+## sans llm
+
+`python solid_rag_query.py`
+
+## avec llm
+
+dans .env
+
+```
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=votre_clé
+CHAT_MODEL=gpt-3.5-turbo
+`python solid_rag_query.py`
+
+```
