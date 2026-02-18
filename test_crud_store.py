@@ -16,7 +16,7 @@ def test_crud():
         client_secret=os.getenv("SOLID_CLIENT_SECRET")
     )
     webid = "http://localhost:3000/david/profile/card#me"  # À adapter si nécessaire
-    base = "http://localhost:3000/david/test_solid_store6/"
+    base = "http://localhost:3000/david/test_solid_store5/"
 
     store = SolidCRUDStore(session, base, webid)
 
@@ -59,8 +59,16 @@ def test_crud():
     logger.info(f"Après mise à jour: {note2}")
 
     # 5. Supprimer
-    logger.info("Suppression...")
+    logger.info("Suppression de la note...")
     ok = store.delete_note(uri)
+    if ok:
+        logger.info("Suppression réussie")
+    else:
+        logger.error("Échec suppression")
+
+    # 5. Supprimer le dossier
+    logger.info("Suppression du container...")
+    ok = store.delete_note(base)
     if ok:
         logger.info("Suppression réussie")
     else:
