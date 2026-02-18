@@ -137,3 +137,20 @@ class SolidCRUDStore:
         else:
             logger.error(f"❌ Échec suppression {uri}: {resp.status_code}")
             return False
+
+    def list_notes(self):
+        container_uri = self.base_container
+        resp = self.session.request('GET', container_uri, headers={'Accept': 'text/turtle'})
+        if resp.status_code != 200:
+            logger.error(f"Impossible de lister le conteneur {container_uri}: {resp.status_code}")
+            return []
+        g = rdflib.Graph().parse(data=resp.text, format='turtle', publicID=container_uri)
+        ldp = rdflib.Namespace("http://www.w3.org/ns/ldp#")
+        notes = []
+        for member in g.objects(rdflib.URIRef(container_uri), ldp.contains):
+            member_uri = str(member)
+            if member_uri.endswith('.ttl'):
+                notes.append(member_uri)
+        # Log pour déboguer
+        logger.info(f"Membres trouvés dans {container_uri}: {notes}")
+        return notes

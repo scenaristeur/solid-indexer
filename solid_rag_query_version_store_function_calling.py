@@ -18,6 +18,8 @@ session = SolidAuthenticatedSession(
     client_id=os.getenv("SOLID_CLIENT_ID"),
     client_secret=os.getenv("SOLID_CLIENT_SECRET")
 )
+
+# print( session.toJSON())
 # Initialisation
 store = SolidVersionedStore(session, base_container="http://localhost:3000/david/notes/")
 

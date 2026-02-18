@@ -68,3 +68,8 @@ python solid_indexer.py http://localhost:3000/david/ > output.txt 2> error.txt
 - mistralai/Ministral-3-8B-Instruct-2512 ok
 - openai/gpt-oss-120b : ok
 - mistralai/Mistral-Small-3.2-24B-Instruct-2506 : Extra inputs are not permitted
+
+# solid-client-credential-py
+
+- https://github.com/Otto-AA/solid-client-credentials-py/
+- https://github.com/Otto-AA/solid-oidc-py

@@ -9,6 +9,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from jose import jwt
 from jose.constants import ALGORITHMS
+from pprint import pformat
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class SolidAuthenticatedSession:
     def __init__(self, idp_url, client_id, client_secret):
@@ -23,7 +28,15 @@ class SolidAuthenticatedSession:
 
         # Ensuite les autres initialisations
         self._generate_dpop_key()
-        self._discover_token_endpoint()
+        self._discover_endpoints()
+        self.userinfo_endpoint = None
+        self.webid = None
+        # pformat(vars(self.session), indent=4, width=1)
+
+
+    def __repr__(self):
+        from pprint import pformat
+        return pformat(vars(self), indent=4, width=1)
 
     def _generate_dpop_key(self):
         """Génère une paire de clés RSA pour DPoP et prépare le JWK."""
@@ -55,12 +68,15 @@ class SolidAuthenticatedSession:
             "use": "sig"
         }
 
-    def _discover_token_endpoint(self):
+    def _discover_endpoints(self):
         """Découvre le token_endpoint via OpenID Configuration."""
         well_known = f"{self.idp_url}/.well-known/openid-configuration"
         resp = self.session.get(well_known)
         resp.raise_for_status()
-        self.token_endpoint = resp.json()['token_endpoint']
+        config=resp.json()
+        # print(config)
+        self.token_endpoint = config['token_endpoint']
+        self.userinfo_endpoint = config['authorization_endpoint']
 
     def _create_dpop_header(self, method, url, ath=None):
         """
@@ -113,9 +129,11 @@ class SolidAuthenticatedSession:
         resp = self.session.post(self.token_endpoint, data=body, headers=headers)
         resp.raise_for_status()
         data = resp.json()
+        print(data)
         self.access_token = data['access_token']
         # Expiration : on retire 60 secondes pour avoir une marge
         self.token_expires_at = time.time() + data.get('expires_in', 3600) - 60
+        #self._fetch_webid()
 
     def _compute_ath(self):
         """Calcule le hash SHA-256 du token d'accès (pour l'en-tête DPoP des requêtes)."""
@@ -143,3 +161,27 @@ class SolidAuthenticatedSession:
         })
 
         return self.session.request(method, url, headers=headers, **kwargs)
+
+    def _fetch_webid(self):
+        """Interroge l'endpoint userinfo pour obtenir le WebID."""
+        if not self.userinfo_endpoint:
+            logger.warning("Pas d'endpoint userinfo, impossible de récupérer le WebID")
+            return
+        # Utiliser le token courant pour une requête authentifiée
+        headers = {'Authorization': f'DPoP {self.access_token}'}
+        dpop = self._create_dpop_header('GET', self.userinfo_endpoint, ath=self._compute_ath())
+        headers['DPoP'] = dpop
+        resp = self.session.get(self.userinfo_endpoint, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            # Le WebID est généralement dans le champ "sub" ou "webid"
+            self.webid = data.get('webid') or data.get('sub')
+            logger.info(f"WebID récupéré : {self.webid}")
+        else:
+            logger.error(f"Échec userinfo: {resp.status_code}")
+
+    def get_webid(self):
+        """Retourne le WebID, le récupère si nécessaire."""
+        if not self.webid:
+            self._fetch_webid()
+        return self.webid
