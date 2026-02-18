@@ -242,6 +242,7 @@ class SolidIndexer:
             documents=documents,
             metadatas=metadatas
         )
+        logger.info(f"Indexation de {uri} : {len(ids)} chunks/entités insérés (embeddings calculés par ChromaDB)")
 
     def extract_rdf_entities(self, graph, base_uri):
         """
@@ -265,57 +266,122 @@ class SolidIndexer:
         graph = Graph()
         try:
             if 'json' in mime_type or 'json-ld' in mime_type:
-                graph.parse(data=content.decode('utf-8'), format='json-ld')
+                graph.parse(data=content.decode('utf-8'), format='json-ld', publicID=uri)
             elif 'turtle' in mime_type or 'ttl' in mime_type:
-                graph.parse(data=content.decode('utf-8'), format='turtle')
+                graph.parse(data=content.decode('utf-8'), format='turtle', publicID=uri)
             elif 'n3' in mime_type:
-                graph.parse(data=content.decode('utf-8'), format='n3')
+                graph.parse(data=content.decode('utf-8'), format='n3', publicID=uri)
             else:
-                # tentative avec format auto
-                graph.parse(data=content.decode('utf-8'))
+                graph.parse(data=content.decode('utf-8'), publicID=uri)
+            logger.info(f"RDF parsé depuis {uri} : {len(graph)} triplets")
         except Exception as e:
             logger.error(f"Erreur parsing RDF pour {uri}: {e}")
             return
 
-        # Extraire les entités (sujets) de ce graphe
+    # Extraire les entités (sujets)
         entities = self.extract_rdf_entities(graph, uri)
+        logger.info(f"Entités extraites de {uri} : {list(entities)[:10]}...")  # max 10 pour éviter trop de logs
 
-        # Pour chaque entité, on construit une description textuelle à partir des triplets
+        # Pour chaque entité, on construit une description textuelle
+        ids = []
+        documents = []
+        metadatas = []
         for entity in entities:
-            # Récupérer tous les triplets où cette entité est sujet
             triples = list(graph.triples((URIRef(entity), None, None)))
             if not triples:
                 continue
-            # Construire un texte lisible
             lines = [f"Entité: {entity}"]
             for s, p, o in triples:
-                pred = str(p).split('/')[-1].split('#')[-1]  # simplifier le prédicat
+                pred = str(p).split('/')[-1].split('#')[-1]
                 obj = str(o) if isinstance(o, URIRef) else o.value if hasattr(o, 'value') else str(o)
                 lines.append(f"{pred}: {obj}")
             text = "\n".join(lines)
+            # Log un extrait du texte généré (première ligne + quelques suivantes)
+            preview = text[:200].replace('\n', ' ')
+            logger.info(f"Document généré pour entité {entity} : {preview}...")
 
-            # Métadonnées pour ce document
+            doc_id = hashlib.md5(entity.encode()).hexdigest()
             meta = {
-                "uri": entity,  # l'URI de l'entité
-                "source_uri": uri,  # la ressource d'origine
+                "uri": entity,
+                "source_uri": uri,
                 "mime_type": mime_type,
                 "etag": headers.get('etag', ''),
                 "last_modified": headers.get('last-modified', ''),
                 "type": "entity"
             }
+            ids.append(doc_id)
+            documents.append(text)
+            metadatas.append(meta)
 
-            # Générer un ID unique pour ce document d'entité
-            doc_id = hashlib.md5(entity.encode()).hexdigest()
+        if not ids:
+            logger.info(f"Aucune entité à indexer pour {uri}")
+            return
 
-            # On utilise upsert pour mettre à jour si l'entité existe déjà
+        # Calculer les embeddings (selon la version)
+        if hasattr(self, 'get_embeddings'):  # Version OpenAI
+            batch_size = 100
+            all_embeddings = []
+            for i in range(0, len(documents), batch_size):
+                batch_docs = documents[i:i+batch_size]
+                embeddings = self.get_embeddings(batch_docs)
+                if embeddings:
+                    all_embeddings.extend(embeddings)
+                else:
+                    logger.error(f"Échec calcul embeddings pour entités de {uri}")
+                    return
             self.collection.upsert(
-                ids=[doc_id],
-                documents=[text],
-                metadatas=[meta]
+                ids=ids,
+                embeddings=all_embeddings,
+                metadatas=metadatas,
+                documents=documents
             )
-            logger.info(f"Entité indexée : {entity}")
-            if entity != uri and entity.startswith(('http://', 'https://')) and entity.startswith(self.base_domain):
-                self.process_resource(entity, depth+1, max_depth)
+        else:
+            self.collection.upsert(
+                ids=ids,
+                metadatas=metadatas,
+                documents=documents
+            )
+        logger.info(f"✅ Indexation RDF terminée pour {uri} : {len(ids)} entités insérées dans ChromaDB")
+
+        # # Extraire les entités (sujets) de ce graphe
+        # entities = self.extract_rdf_entities(graph, uri)
+
+        # # Pour chaque entité, on construit une description textuelle à partir des triplets
+        # for entity in entities:
+        #     # Récupérer tous les triplets où cette entité est sujet
+        #     triples = list(graph.triples((URIRef(entity), None, None)))
+        #     if not triples:
+        #         continue
+        #     # Construire un texte lisible
+        #     lines = [f"Entité: {entity}"]
+        #     for s, p, o in triples:
+        #         pred = str(p).split('/')[-1].split('#')[-1]  # simplifier le prédicat
+        #         obj = str(o) if isinstance(o, URIRef) else o.value if hasattr(o, 'value') else str(o)
+        #         lines.append(f"{pred}: {obj}")
+        #     text = "\n".join(lines)
+
+        #     # Métadonnées pour ce document
+        #     meta = {
+        #         "uri": entity,  # l'URI de l'entité
+        #         "source_uri": uri,  # la ressource d'origine
+        #         "mime_type": mime_type,
+        #         "etag": headers.get('etag', ''),
+        #         "last_modified": headers.get('last-modified', ''),
+        #         "type": "entity"
+        #     }
+
+        #     # Générer un ID unique pour ce document d'entité
+        #     doc_id = hashlib.md5(entity.encode()).hexdigest()
+
+        #     # On utilise upsert pour mettre à jour si l'entité existe déjà
+        #     self.collection.upsert(
+        #         ids=[doc_id],
+        #         documents=[text],
+        #         metadatas=[meta]
+        #     )
+        #     logger.info(f"Entité indexée : {entity}")
+        #     if entity != uri and entity.startswith(('http://', 'https://')) and entity.startswith(self.base_domain):
+        #         self.process_resource(entity, depth+1, max_depth)
 
         # Option : on pourrait aussi indexer le graphe complet comme un document texte
         # (mais on se concentre sur les entités)
@@ -394,10 +460,12 @@ class SolidIndexer:
         is_container = 'rel="type"' in link and 'ldp#Container' in link or uri.endswith('/')
         logger.info(f"is_container: {is_container} ")
         if is_container:
-            # C'est un conteneur : on liste son contenu à partir du body RDF
-            self.list_container(uri, depth, content)
+            self.list_container(uri, depth)
+            logger.info(f"Conteneur {uri} listé, mais non indexé directement")
+            return
         elif 'text/turtle' in content_type or 'application/ld+json' in content_type or 'text/n3' in content_type or 'application/rdf+xml' in content_type or uri.endswith(('.ttl','.jsonld','.n3','.rdf')):
             # Ressource RDF
+            logger.info(f"Ressource RDF détectée : {uri}")
             self.index_rdf_resource(uri, content, headers, content_type)
             # Après avoir indexé les entités de cette ressource, on peut suivre les URI des entités pour indexer leur description
             # Mais attention à ne pas créer de boucles infinies. On peut décider de suivre uniquement les URI qui sont dans le même domaine ou pod.
@@ -405,7 +473,7 @@ class SolidIndexer:
             # On extrait les entités de la ressource (sujets et objets)
             graph = Graph()
             try:
-                graph.parse(data=content, format=self._guess_format(uri, content_type))
+                graph.parse(data=content, format=self._guess_format(uri, content_type), publicID=uri)
                 entities = self.extract_rdf_entities(graph, uri)
                 for ent in entities:
                     # On évite de se suivre soi-même et on limite la profondeur
@@ -489,6 +557,8 @@ class SolidIndexer:
         self.base_domain = f"{parsed.scheme}://{parsed.netloc}"
         logger.info(f"Démarrage de l'indexation depuis {start_url} (domaine: {self.base_domain})")
         self.process_resource(start_url, depth=0, max_depth=5)
+        count = self.collection.count()
+        logger.info(f"Nombre total de documents dans la collection : {count}")
         self.save_visited()
 
 # if __name__ == "__main__":  # remarquez les doubles underscores

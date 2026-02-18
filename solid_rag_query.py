@@ -35,11 +35,6 @@ class SolidRAG:
             self.chat_model = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")
 
     def retrieve(self, query, n_results=5):
-        """
-        Recherche les n passages les plus proches de la requête.
-        Utilise la fonction d'embedding par défaut de ChromaDB.
-        Retourne une liste de tuples (document, métadonnées, distance).
-        """
         results = self.collection.query(
             query_texts=[query],
             n_results=n_results,
@@ -48,7 +43,25 @@ class SolidRAG:
         docs = results['documents'][0]
         metas = results['metadatas'][0]
         dists = results['distances'][0]
+        for i, (doc, meta, dist) in enumerate(zip(docs, metas, dists)):
+            logger.info(f"Résultat {i+1}: {meta.get('uri')} (dist={dist:.4f}) - extrait: {doc[:50]}...")
         return list(zip(docs, metas, dists))
+
+    # def retrieve(self, query, n_results=5):
+    #     """
+    #     Recherche les n passages les plus proches de la requête.
+    #     Utilise la fonction d'embedding par défaut de ChromaDB.
+    #     Retourne une liste de tuples (document, métadonnées, distance).
+    #     """
+    #     results = self.collection.query(
+    #         query_texts=[query],
+    #         n_results=n_results,
+    #         include=["documents", "metadatas", "distances"]
+    #     )
+    #     docs = results['documents'][0]
+    #     metas = results['metadatas'][0]
+    #     dists = results['distances'][0]
+    #     return list(zip(docs, metas, dists))
 
     def build_prompt(self, query, context_items):
         """Construit un prompt à partir de la question et des documents trouvés."""

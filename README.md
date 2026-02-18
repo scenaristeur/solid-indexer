@@ -39,3 +39,11 @@ CHAT_MODEL=gpt-3.5-turbo
 `python solid_rag_query.py`
 
 ```
+
+# log
+
+avec log.txt
+
+`python solid_indexer.py http://localhost:3000/david/ > log.txt 2>&1`
+
+python solid_indexer.py http://localhost:3000/david/ > output.txt 2> error.txt
