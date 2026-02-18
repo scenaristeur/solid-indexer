@@ -9,3 +9,12 @@ for i, (doc, meta) in enumerate(zip(all_docs['documents'], all_docs['metadatas']
         break
     else:
         print("pas trouvé dans ",len(all_docs))
+
+# requete mixte vectorielle + filtre sur graphe
+# results = collection.query(
+#     query_texts=["personne habitant à Paris"],
+#     n_results=10,
+#     where={"type": "entity", "based_near": "Paris"}  # si based_near est une métadonnée
+# )
+
+# print(results)

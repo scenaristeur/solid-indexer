@@ -47,3 +47,7 @@ avec log.txt
 `python solid_indexer.py http://localhost:3000/david/ > log.txt 2>&1`
 
 python solid_indexer.py http://localhost:3000/david/ > output.txt 2> error.txt
+
+# discussion
+
+- https://chat.deepseek.com/a/chat/s/5ef0514f-a99e-4f72-882c-4160a4a8dd75
