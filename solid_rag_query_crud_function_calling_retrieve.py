@@ -123,7 +123,9 @@ def call_function(name, args):
 
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
-    # logger.debug(f"Messages: {messages}")
+    logger.debug(f"******* start call_llm with tool_calls already done : { tool_calls}")
+    # logger.debug(f"******* TOOLS\n{ json.dumps(tools, indent=4)}\n**********\n")
+    logger.debug(f"******* MESSAGES\n{messages}\n**********\n")
     try : 
         response = openai_client.chat.completions.create(
             model=chat_model,
@@ -131,10 +133,12 @@ def call_llm(messages, tool_calls):
             tools=tools,
             tool_choice="auto",  # Laissez le modèle décider
         )
+        logger.debug(f"******* RESPONSE\n{response}\n**********\n")
         message = response.choices[0].message
-        # logger.debug(f"RESPONSE: {message}")
+        logger.debug(f"********** RESPONSE MESSAGE\n{message}\n**********\n")
 
         if message.tool_calls:
+            logger.debug(f"******* message.tool_calls True")
             tool_calls+=1
             logger.info(f"[TOOL CALL]: {tool_calls}")
             tool_call = message.tool_calls[0]
@@ -142,7 +146,7 @@ def call_llm(messages, tool_calls):
             arguments = json.loads(tool_call.function.arguments)
             logger.info(f"Appel fonction {tool_name} avec args {arguments}")
             result = call_function(tool_name, arguments)
-            logger.info(f"result {result}")
+            logger.debug(f"********** TOOL_CALL RESULT\n{result}\n**********\n")
             # Ajouter la réponse de la fonction à la conversation
             messages.append(message)  # le message avec tool_call
             messages.append({
@@ -152,14 +156,16 @@ def call_llm(messages, tool_calls):
                 "content": result
             })
 
-            # logger.debug(messages)
+            logger.debug(f"******* MESSAGES AFTER TOOL_CALL\n{messages}\n**********\n")
 
             return False, tool_calls, message
 
             # Réponse directe
         else:
+            logger.debug(f"******* message.tool_calls False")
             return True, tool_calls, message
     except Exception as e:
+        logger.debug(f"******* ERREUR CALL_LLM\n{e}\n**********\n")
         logger.error(f"Erreur call_llm: {e}")
         return True, tool_calls, e
 
@@ -167,7 +173,9 @@ def call_llm(messages, tool_calls):
 
 print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm")
 while True:
+    logger.debug(f"\n\n******* start new conversation loop")
     user_input = input("\nVous: ").strip()
+    logger.debug(f"\n******\n USER_INPUT\n{user_input}\n******\n")
     if user_input.lower() in ('quit', 'exit'):
         break
     elif user_input.startswith(':'):
