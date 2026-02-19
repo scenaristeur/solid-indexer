@@ -36,7 +36,7 @@ CHAT_MODEL=provider/MyModel-3-8B-Instruct-2512
 python -m venv .venv
 . .venv/bin/activate
 python install -r requirements.txt
-python solid_rag_query_crud_function_calling.py
+~/dev/solid-indexer$ python solid_rag_query_crud_function_calling_retrieve.py
 
 ```
 
@@ -46,7 +46,7 @@ python solid_rag_query_crud_function_calling.py
 
 ```
 
-:~/dev/solid-indexer$ python solid_rag_query_crud_function_calling.py
+~/dev/solid-indexer$ python solid_rag_query_crud_function_calling_retrieve.py
 2026-02-19 06:53:58,879 - INFO - CRUD Store initialisé avec base: http://localhost:3000/david/notes/
 Assistant prêt. Tapez votre question (ou 'quit' pour quitter).
 
@@ -85,6 +85,7 @@ Vous:
 
 - [create (EXEMPLE.md)](./examples/EXEMPLE.md)
 - [recette, reference](./examples/EXEMPLE2.md)
+- [retrieve and tools loop](./examples/EXEMPLE3.md)
 
 ## fonctionnalité INDEXER/ RETRIEVE :
 
