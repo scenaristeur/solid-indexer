@@ -183,3 +183,7 @@ test_function_calling_model.py
 # logs
 
 `tail -f ./logs/rag_query_crud.log`
+
+# get webid and other server infos
+
+- https://github.com/CommunitySolidServer/CommunitySolidServer/discussions/2118

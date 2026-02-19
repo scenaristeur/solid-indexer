@@ -16,7 +16,7 @@ tool_calls_limit = 6
 load_dotenv()
 # Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 # Configurer un RotatingFileHandler
 handler = RotatingFileHandler(
@@ -107,6 +107,7 @@ def call_function(name, args):
             return "Aucune note trouvée."
     elif name == "retrieve":
         context = rag.retrieve(args["query"])
+
         return context if context else "Aucun contexte trouvé pour cette question."
     elif name == "index":
         success = indexer.run(base_container)
@@ -117,40 +118,44 @@ def call_function(name, args):
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
     # logger.debug(f"Messages: {messages}")
-    response = openai_client.chat.completions.create(
-        model=chat_model,
-        messages=messages,
-        tools=tools,
-        tool_choice="auto",  # Laissez le modèle décider
-    )
-    message = response.choices[0].message
-    # logger.debug(f"RESPONSE: {message}")
+    try : 
+        response = openai_client.chat.completions.create(
+            model=chat_model,
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",  # Laissez le modèle décider
+        )
+        message = response.choices[0].message
+        # logger.debug(f"RESPONSE: {message}")
 
-    if message.tool_calls:
-        tool_calls+=1
-        logger.info(f"[TOOL CALL]: {tool_calls}")
-        tool_call = message.tool_calls[0]
-        tool_name = tool_call.function.name
-        arguments = json.loads(tool_call.function.arguments)
-        logger.info(f"Appel fonction {tool_name} avec args {arguments}")
-        result = call_function(tool_name, arguments)
-        logger.info(f"result {result}")
-        # Ajouter la réponse de la fonction à la conversation
-        messages.append(message)  # le message avec tool_call
-        messages.append({
-        "role": "tool",
-            "tool_call_id": tool_call.id,
-            "name": tool_call.function.name,
-            "content": result
-        })
+        if message.tool_calls:
+            tool_calls+=1
+            logger.info(f"[TOOL CALL]: {tool_calls}")
+            tool_call = message.tool_calls[0]
+            tool_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
+            logger.info(f"Appel fonction {tool_name} avec args {arguments}")
+            result = call_function(tool_name, arguments)
+            logger.info(f"result {result}")
+            # Ajouter la réponse de la fonction à la conversation
+            messages.append(message)  # le message avec tool_call
+            messages.append({
+            "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_call.function.name,
+                "content": result
+            })
 
-        # logger.debug(messages)
+            # logger.debug(messages)
 
-        return False, tool_calls, message
+            return False, tool_calls, message
 
-        # Réponse directe
-    else:
-        return True, tool_calls, message
+            # Réponse directe
+        else:
+            return True, tool_calls, message
+    except Exception as e:
+        logger.error(f"Erreur call_llm: {e}")
+        return True, tool_calls, e
 
 
 
