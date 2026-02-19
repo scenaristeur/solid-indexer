@@ -129,7 +129,7 @@ class SolidAuthenticatedSession:
         resp = self.session.post(self.token_endpoint, data=body, headers=headers)
         resp.raise_for_status()
         data = resp.json()
-        print(data)
+        # print(data)
         self.access_token = data['access_token']
         # Expiration : on retire 60 secondes pour avoir une marge
         self.token_expires_at = time.time() + data.get('expires_in', 3600) - 60
