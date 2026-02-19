@@ -107,8 +107,14 @@ def call_function(name, args):
             return "Aucune note trouvée."
     elif name == "retrieve":
         context = rag.retrieve(args["query"])
-
-        return context if context else "Aucun contexte trouvé pour cette question."
+        
+        # Convertir le contexte en format texte lisible
+        if context:
+            context_text = "\n\n---\n\n".join(
+                f"Document (source: {item[1]['uri']}):\n{item[0]}"
+                for item in context
+            )
+            return context_text
     elif name == "index":
         success = indexer.run(base_container)
         return "Notes indexes" if success else "Échec index"
