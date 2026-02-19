@@ -86,6 +86,43 @@ Vous:
 - [create (EXEMPLE.md)](./examples/EXEMPLE.md)
 - [recette, reference](./examples/EXEMPLE2.md)
 
+## fonctionnalité INDEXER/ RETRIEVE :
+
+- [indexer example](./examples/INDEXER_TEST.md) : `python solid_indexer.py http://localhost:3000/david/notes/`
+
+```
+ python solid_rag_query.py
+INFO:chromadb.telemetry.product.posthog:Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+Assistant RAG prêt. Tapez votre question (ou 'quit' pour quitter).
+
+Question: combien d'oeufs pour le gateau ?
+INFO:__main__:Résultat 1: http://localhost:3000/david/notes/quiche-a-la-salsepareille.ttl (dist=0.7162) - extrait: Entité: http://localhost:3000/david/notes/quiche-a...
+INFO:__main__:Résultat 2: http://localhost:3000/david/notes/tools-david.ttl (dist=0.7367) - extrait: Entité: http://localhost:3000/david/notes/tools-da...
+INFO:__main__:Résultat 3: http://localhost:3000/david/notes/recette-gateau-jaune-blanc-emile.ttl (dist=0.7466) - extrait: Entité: http://localhost:3000/david/notes/recette-...
+INFO:__main__:Résultat 4: http://localhost:3000/david/notes/todo1.ttl (dist=0.7773) - extrait: Entité: http://localhost:3000/david/notes/todo1.tt...
+INFO:__main__:Résultat 5: http://localhost:3000/david/holacratie/acteurs/isidore.ttl#Isidore (dist=0.7774) - extrait: Entité: http://localhost:3000/david/holacratie/act...
+INFO:__main__:Prompt envoyé au LLM (longueur: 5221 caractères)
+INFO:httpx:HTTP Request: POST https://albert.api.etalab.gouv.fr/v1/chat/completions "HTTP/1.1 200 OK"
+
+Pour le **Gâteau Jaune et Blanc d'Émile**, il faut **3 jaunes d'œufs** (et des blancs séparés, non quantifiés dans le contexte).
+
+Question: is the quiche vegetarian ?
+INFO:__main__:Résultat 1: http://localhost:3000/david/notes/quiche-a-la-salsepareille.ttl (dist=0.5438) - extrait: Entité: http://localhost:3000/david/notes/quiche-a...
+INFO:__main__:Résultat 2: http://localhost:3000/david/notes/recette-gateau-jaune-blanc-emile.ttl (dist=0.7286) - extrait: Entité: http://localhost:3000/david/notes/recette-...
+INFO:__main__:Résultat 3: http://localhost:3000/david/notes/todo1.ttl (dist=0.7564) - extrait: Entité: http://localhost:3000/david/notes/todo1.tt...
+INFO:__main__:Résultat 4: http://localhost:3000/david/notes/recettes.ttl (dist=0.7759) - extrait: Entité: http://localhost:3000/david/notes/recettes...
+INFO:__main__:Résultat 5: http://localhost:3000/david/notes/tools-david.ttl (dist=0.8052) - extrait: Entité: http://localhost:3000/david/notes/tools-da...
+INFO:__main__:Prompt envoyé au LLM (longueur: 6273 caractères)
+INFO:httpx:HTTP Request: POST https://albert.api.etalab.gouv.fr/v1/chat/completions "HTTP/1.1 200 OK"
+
+Oui, la **Quiche à la Salsepareille** est végétarienne.
+Elle contient des œufs, de la crème fraîche, du fromage râpé, des oignons et de la salsepareille, mais **pas de viande ou de produits d'origine animale non autorisés** dans une recette végétarienne.
+
+
+Question:
+
+```
+
 # solid token generation& AUTH
 
 - https://communitysolidserver.github.io/CommunitySolidServer/5.x/usage/client-credentials/

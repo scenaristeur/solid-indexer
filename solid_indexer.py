@@ -12,6 +12,7 @@ import pypdf
 import json
 import time
 import logging
+from logging.handlers import RotatingFileHandler
 from solid_auth import SolidAuthenticatedSession
 
 from dotenv import load_dotenv
@@ -22,8 +23,36 @@ from urllib.parse import urlparse
 
 # Configuration du logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
+
+# Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Configurer un RotatingFileHandler
+handler = RotatingFileHandler(
+    'logs/solid_indexer.log',  # Nom du fichier de log
+    maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
+    backupCount=3  # Nombre de fichiers de sauvegarde
+)
+
+# Configurer le format et le niveau
+# https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+
+# Exemple de messages de log
+logging.debug("Ceci est un message de débogage")
+logging.info("Ceci est un message d'information")
+logging.warning("Ceci est un avertissement")
+logging.error("Ceci est une erreur")
+logging.critical("Ceci est un message critique")
+
+logging.critical("******************************************NEW INDEXATION**************************************")
+
 
 class SolidIndexer:
     """
@@ -301,7 +330,7 @@ class SolidIndexer:
             # Log un extrait du texte généré (première ligne + quelques suivantes)
             preview = text[:200].replace('\n', ' ')
             logger.info(f"Document généré pour entité {entity} : {preview}...")
-
+            predicates = list(set(str(p) for _, p, _ in triples))
             doc_id = hashlib.md5(entity.encode()).hexdigest()
             meta = {
                 "uri": entity,
@@ -310,7 +339,7 @@ class SolidIndexer:
                 "etag": headers.get('etag', ''),
                 "last_modified": headers.get('last-modified', ''),
                 "type": "entity",
-                "relations": json.dumps([str(p) for p in objects])  # ou une liste limitée
+                "relations": json.dumps(predicates)  # ou une liste limitée
             }
             ids.append(doc_id)
             documents.append(text)
