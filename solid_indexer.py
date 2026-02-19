@@ -28,7 +28,7 @@ from urllib.parse import urlparse
 
 # Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Configurer un RotatingFileHandler
 handler = RotatingFileHandler(
@@ -39,19 +39,12 @@ handler = RotatingFileHandler(
 
 # Configurer le format et le niveau
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - [INDEX]: %(message)s')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
-# Exemple de messages de log
-logging.debug("Ceci est un message de débogage")
-logging.info("Ceci est un message d'information")
-logging.warning("Ceci est un avertissement")
-logging.error("Ceci est une erreur")
-logging.critical("Ceci est un message critique")
-
-logging.critical("******************************************NEW INDEXATION**************************************")
+logging.info("********** Loading indexer")
 
 
 class SolidIndexer:

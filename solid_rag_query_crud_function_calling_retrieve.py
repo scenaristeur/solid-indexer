@@ -16,7 +16,7 @@ tool_calls_limit = 6
 load_dotenv()
 # Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 # Configurer un RotatingFileHandler
 handler = RotatingFileHandler(
@@ -27,19 +27,13 @@ handler = RotatingFileHandler(
 
 # Configurer le format et le niveau
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - [MAIN] - %(message)s')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
-# Exemple de messages de log
-# logging.debug("Ceci est un message de débogage")
-# logging.info("Ceci est un message d'information")
-# logging.warning("Ceci est un avertissement")
-# logging.error("Ceci est une erreur")
-# logging.critical("Ceci est un message critique")
 
-logging.info("******************************************NEW SESSION**************************************")
+logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
 
 til = ToolsInternalCommands()
 
@@ -61,16 +55,17 @@ session = SolidAuthenticatedSession(
     client_id=os.getenv("SOLID_CLIENT_ID"),
     client_secret=os.getenv("SOLID_CLIENT_SECRET")
 )
+# print("session",session)
 
 base_container="http://localhost:3000/david/notes/"
-webid= "http://localhost:3000/david/profile/card#me"
+# webid= "http://localhost:3000/david/profile/card#me"
 # webid = session.get_webid()
 # print(webid)  # Affiche http://localhost:3000/david/profile/card#me
 
 # print( session.toJSON())
 # Initialisation
 # store = SolidVersionedStore(session, base_container="http://localhost:3000/david/notes/")
-store = SolidCRUDStore(session, base_container="http://localhost:3000/david/notes/", webid=webid)
+store = SolidCRUDStore(session, base_container="http://localhost:3000/david/notes/", webid=session.webid)
 
 # Client OpenAI
 openai_client = OpenAI(
@@ -121,7 +116,7 @@ def call_function(name, args):
 
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
-    logger.debug(f"Messages: {messages}")
+    # logger.debug(f"Messages: {messages}")
     response = openai_client.chat.completions.create(
         model=chat_model,
         messages=messages,
@@ -129,7 +124,7 @@ def call_llm(messages, tool_calls):
         tool_choice="auto",  # Laissez le modèle décider
     )
     message = response.choices[0].message
-    logger.debug(f"RESPONSE: {message}")
+    # logger.debug(f"RESPONSE: {message}")
 
     if message.tool_calls:
         tool_calls+=1

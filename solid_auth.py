@@ -129,11 +129,11 @@ class SolidAuthenticatedSession:
         resp = self.session.post(self.token_endpoint, data=body, headers=headers)
         resp.raise_for_status()
         data = resp.json()
-        # print(data)
         self.access_token = data['access_token']
         # Expiration : on retire 60 secondes pour avoir une marge
         self.token_expires_at = time.time() + data.get('expires_in', 3600) - 60
-        #self._fetch_webid()
+        self._fetch_webid()
+
 
     def _compute_ath(self):
         """Calcule le hash SHA-256 du token d'accès (pour l'en-tête DPoP des requêtes)."""
@@ -164,21 +164,9 @@ class SolidAuthenticatedSession:
 
     def _fetch_webid(self):
         """Interroge l'endpoint userinfo pour obtenir le WebID."""
-        if not self.userinfo_endpoint:
-            logger.warning("Pas d'endpoint userinfo, impossible de récupérer le WebID")
-            return
-        # Utiliser le token courant pour une requête authentifiée
-        headers = {'Authorization': f'DPoP {self.access_token}'}
-        dpop = self._create_dpop_header('GET', self.userinfo_endpoint, ath=self._compute_ath())
-        headers['DPoP'] = dpop
-        resp = self.session.get(self.userinfo_endpoint, headers=headers)
-        if resp.status_code == 200:
-            data = resp.json()
-            # Le WebID est généralement dans le champ "sub" ou "webid"
-            self.webid = data.get('webid') or data.get('sub')
-            logger.info(f"WebID récupéré : {self.webid}")
-        else:
-            logger.error(f"Échec userinfo: {resp.status_code}")
+        req = self.session.request('HEAD', self.idp_url)
+        claims = jwt.get_unverified_claims(self.access_token)
+        self.webid = claims['webid']
 
     def get_webid(self):
         """Retourne le WebID, le récupère si nécessaire."""
