@@ -20,7 +20,7 @@ class SolidRAG:
     Si une clé OpenAI est fournie, une réponse est générée par LLM.
     """
 
-    def __init__(self, collection_name="solid_memory", persist_directory="./chroma_db"):
+    def __init__(self, collection_name="mon_pod", persist_directory="./chroma_storage"):
         # Connexion à la base ChromaDB persistante
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.collection = self.client.get_collection(collection_name)

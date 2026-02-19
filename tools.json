@@ -1,0 +1,140 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "create_note",
+            "description": "Crée une nouvelle note avec un titre et un contenu",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Titre de la note (slug)"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Contenu textuel de la note"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Tags optionnels séparés par des virgules"
+                    }
+                },
+                "required": [
+                    "title",
+                    "content"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_note",
+            "description": "Lit le contenu d'une note existante",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI de la note à lire"
+                    }
+                },
+                "required": [
+                    "uri"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_note",
+            "description": "Met à jour le contenu d'une note existante",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI de la note à modifier"
+                    },
+                    "new_content": {
+                        "type": "string",
+                        "description": "Nouveau contenu"
+                    }
+                },
+                "required": [
+                    "uri",
+                    "new_content"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_note",
+            "description": "Supprime (archive) une note",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI de la note à supprimer"
+                    }
+                },
+                "required": [
+                    "uri"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_notes",
+            "description": "Liste toutes les notes actives",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI du container à lister"
+                    }
+                },
+                "required": [
+                    "uri"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "index",
+            "description": "permet de vectoriser les notes, de les stocker dans le RAG pour une recherche plus efficace",
+            "parameters": {
+                "type": "object"
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "retrieve",
+            "description": " rechercher et récupérer dans le RAG les notes pertinentes en fonction de la requête de l'utilisateur",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "La requete de l'utilisateur"
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        }
+    }
+]
