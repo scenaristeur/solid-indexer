@@ -5,14 +5,13 @@ import json
 # from solid_versioned_store import SolidVersionedStore
 from solid_crud_store import SolidCRUDStore
 from solid_rag_query import SolidRAG
+from solid_indexer import SolidIndexer
 from openai import OpenAI
 import logging
 from logging.handlers import RotatingFileHandler
 from tools.internal.commands import ToolsInternalCommands
 
 load_dotenv()
-til = ToolsInternalCommands()
-rag = SolidRAG()
 # Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,13 +31,22 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Exemple de messages de log
-logging.debug("Ceci est un message de débogage")
-logging.info("Ceci est un message d'information")
-logging.warning("Ceci est un avertissement")
-logging.error("Ceci est une erreur")
-logging.critical("Ceci est un message critique")
+# logging.debug("Ceci est un message de débogage")
+# logging.info("Ceci est un message d'information")
+# logging.warning("Ceci est un avertissement")
+# logging.error("Ceci est une erreur")
+# logging.critical("Ceci est un message critique")
 
-logging.critical("******************************************NEW SESSION**************************************")
+logging.info("******************************************NEW SESSION**************************************")
+
+til = ToolsInternalCommands()
+
+collection_name="mon_pod"
+persist_directory="./chroma_storage"
+indexer = SolidIndexer(collection_name=collection_name, persist_directory=persist_directory)
+rag = SolidRAG(collection_name=collection_name, persist_directory=persist_directory)
+
+
 
 with open('tools.json') as f:
     tools = json.load(f)
@@ -101,8 +109,11 @@ def call_function(name, args):
         else:
             return "Aucune note trouvée."
     elif name == "retrieve":
-        content_retrieved = rag.retrieve(args["query"])
-        return content_retrieved if content_retrieved else "Échec suppression"
+        context = rag.retrieve(args["query"])
+        return content_retrcontextieved if context else "Aucun contexte trouvé pour cette question."
+    elif name == "index":
+        success = indexer.run(base_container)
+        return "Notes indexes" if success else "Échec index"
     else:
         return "Fonction inconnue"
 
@@ -150,7 +161,7 @@ while True:
                 "content": result
             })
 
-            logger.debug(messages)
+            # logger.debug(messages)
             # Deuxième appel pour obtenir la réponse finale
             second_response = openai_client.chat.completions.create(
                 model=chat_model,

@@ -592,6 +592,7 @@ class SolidIndexer:
         count = self.collection.count()
         logger.info(f"Nombre total de documents dans la collection : {count}")
         self.save_visited()
+        return True
 
 # if __name__ == "__main__":  # remarquez les doubles underscores
 #     indexer = SolidIndexer(collection_name="mon_pod", persist_directory="./chroma_storage") # À remplacer par l'URL de votre pod ou dossier Solid

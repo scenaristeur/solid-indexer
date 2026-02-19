@@ -90,6 +90,14 @@ Vous:
 
 - [indexer example](./examples/INDEXER_TEST.md) : `python solid_indexer.py http://localhost:3000/david/notes/`
 
+## toos & retrieve
+
+python solid_rag_query_crud_function_calling_retrieve.py
+-> create some notes like : create a new note about Solid and put Tim as founder, David as Developper
+-> then type : index
+-> then ask questions
+-> enjoy !!!
+
 ```
  python solid_rag_query.py
 INFO:chromadb.telemetry.product.posthog:Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
