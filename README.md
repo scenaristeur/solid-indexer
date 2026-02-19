@@ -83,7 +83,8 @@ Vous:
 
 ## fonctionnalité CRUD :
 
-- [exemple d'utilisation (EXEMPLE.md)](EXEMPLE.md)
+- [create (EXEMPLE.md)](./examples/EXEMPLE.md)
+- [recette, reference](./examples/EXEMPLE2.md)
 
 # solid token generation& AUTH
 

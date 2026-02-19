@@ -174,11 +174,13 @@ def call_function(name, args):
     else:
         return "Fonction inconnue"
 
-print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter).")
+print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm")
 while True:
     user_input = input("\nVous: ").strip()
     if user_input.lower() in ('quit', 'exit'):
         break
+    elif user_input.startswith(':'):
+        print("TODO: commandes internes : cd, ls, mkdir...")
     if not user_input:
         continue
 
@@ -211,7 +213,7 @@ while True:
             "content": result
         })
 
-        logger.warn(messages)
+        logger.debug(messages)
         # Deuxième appel pour obtenir la réponse finale
         second_response = openai_client.chat.completions.create(
             model=chat_model,
