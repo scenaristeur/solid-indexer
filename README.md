@@ -124,9 +124,7 @@ python solid_indexer.py http://localhost:3000/david/ > output.txt 2> error.txt
 
 # FUNCTION CALLING
 
-[
-
-](test_function_calling_model.py)
+test_function_calling_model.py
 
 - mistralai/Ministral-3-8B-Instruct-2512 ok
 - openai/gpt-oss-120b : ok
@@ -137,4 +135,6 @@ python solid_indexer.py http://localhost:3000/david/ > output.txt 2> error.txt
 - https://github.com/Otto-AA/solid-client-credentials-py/
 - https://github.com/Otto-AA/solid-oidc-py
 
-# test index/retrieve
+# logs
+
+`tail -f ./logs/rag_query_crud.log`

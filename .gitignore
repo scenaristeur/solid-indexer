@@ -4,3 +4,4 @@ __pycache__
 chroma_storage
 visited.json
 data
+logs/*

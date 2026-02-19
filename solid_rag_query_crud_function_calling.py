@@ -6,12 +6,38 @@ import json
 from solid_crud_store import SolidCRUDStore
 from openai import OpenAI
 import logging
+from logging.handlers import RotatingFileHandler
+from tools.internal.commands import ToolsInternalCommands
 
 load_dotenv()
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+til = ToolsInternalCommands()
+# Créer un logger et ajouter le handler
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Configurer un RotatingFileHandler
+handler = RotatingFileHandler(
+    'logs/rag_query_crud.log',  # Nom du fichier de log
+    maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
+    backupCount=3  # Nombre de fichiers de sauvegarde
+)
+
+# Configurer le format et le niveau
+# https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+
+# Exemple de messages de log
+logging.debug("Ceci est un message de débogage")
+logging.info("Ceci est un message d'information")
+logging.warning("Ceci est un avertissement")
+logging.error("Ceci est une erreur")
+logging.critical("Ceci est un message critique")
+
+logging.critical("******************************************NEW SESSION**************************************")
+
 
 # Initialisation de la session Solid
 session = SolidAuthenticatedSession(
@@ -181,139 +207,55 @@ while True:
         break
     elif user_input.startswith(':'):
         print("TODO: commandes internes : cd, ls, mkdir...")
+        internal_command_result = til.process({"user_input": user_input})
+        continue
+    elif user_input.startswith(':'):
+        print("TODO: commandes llm (enchaine comande + llm)...")
     if not user_input:
         continue
 
-    messages.append({"role": "user", "content": user_input})
+    if len(user_input) > 0:
+        messages.append({"role": "user", "content": user_input})
 
-    # Appel au LLM avec fonctions
-    response = openai_client.chat.completions.create(
-        model=chat_model,
-        messages=messages,
-        tools=tools,
-        tool_choice="auto",  # Laissez le modèle décider
-    )
-    message = response.choices[0].message
-    logger.info(message)
-
-    # Vérifier si le modèle a demandé d'appeler une fonction
-    if message.tool_calls:
-        tool_call = message.tool_calls[0]
-        tool_name = tool_call.function.name
-        arguments = json.loads(tool_call.function.arguments)
-        logger.info(f"Appel fonction {tool_name} avec args {arguments}")
-        result = call_function(tool_name, arguments)
-        logger.info(f"result {result}")
-        # Ajouter la réponse de la fonction à la conversation
-        messages.append(message)  # le message avec tool_call
-        messages.append({
-           "role": "tool",
-            "tool_call_id": tool_call.id,
-            "name": tool_call.function.name,
-            "content": result
-        })
-
-        logger.debug(messages)
-        # Deuxième appel pour obtenir la réponse finale
-        second_response = openai_client.chat.completions.create(
+        # Appel au LLM avec fonctions
+        response = openai_client.chat.completions.create(
             model=chat_model,
-            messages=messages
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",  # Laissez le modèle décider
         )
-        final_message = second_response.choices[0].message
-        assistant_reply = final_message.content
-        messages.append({"role": "assistant", "content": assistant_reply})
-        print(f"\nAssistant: {assistant_reply}")
-    else:
-        # Réponse directe
-        assistant_reply = message.content
-        messages.append({"role": "assistant", "content": assistant_reply})
-        print(f"\nAssistant: {assistant_reply}")
+        message = response.choices[0].message
+        logger.info(message)
 
-# # Dans la boucle de conversation, après avoir reçu la réponse du LLM, on vérifie s'il y a un appel de fonction
-# # Exemple avec l'API OpenAI :
-# response = openai_client.chat.completions.create(
-#     model=chat_model,
-#     messages=messages,
-#     functions=functions,
-#     function_call="auto"
-# )
+        # Vérifier si le modèle a demandé d'appeler une fonction
+        if message.tool_calls:
+            tool_call = message.tool_calls[0]
+            tool_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
+            logger.info(f"Appel fonction {tool_name} avec args {arguments}")
+            result = call_function(tool_name, arguments)
+            logger.info(f"result {result}")
+            # Ajouter la réponse de la fonction à la conversation
+            messages.append(message)  # le message avec tool_call
+            messages.append({
+            "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_call.function.name,
+                "content": result
+            })
 
-# logger.info(f"Réponse du LLM: {response.choices[0].message}")
-
-# message = response.choices[0].message
-# if message.tool_calls:
-#     print("✅ Le modèle supporte le function calling !")
-#     tool_call = message.tool_calls[0]
-#     tool_name = message.tool_call.name
-#     print(f"Outil appelé : {tool_name}")
-#     arguments = json.loads(tool_call.function.arguments)
-#     print(f"Arguments : {arguments}")
-#     result = call_function(tool_name, arguments)
-#     print("RESULT", result)
-#     # Dans call_function, après avoir fait l'opération, on réindexe
-#     #indexer.process_resource(uri, force=True)  # Il faudrait modifier process_resource pour accepter un flag force
-#     # Envoyer le résultat au LLM pour qu'il génère une réponse finale
-#     messages.append(message)  # message avec function_call
-#     messages.append({
-#         "role": "tool",
-#         "tool_call_id": tool_call.id,
-#         "name": tool_call.function.name,
-#         "content": result
-#     })
-#     second_response = openai_client.chat.completions.create(
-#         model=chat_model,
-#         messages=messages
-#     )
-#     final_answer = second_response.choices[0].message.content
-# else:
-#     final_answer = message.content
-# # print("test function_calling ", final_answer)
-
-
-
-# print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter).")
-# while True:
-#     user_input = input("\nVous: ").strip()
-#     if user_input.lower() in ('quit', 'exit'):
-#         break
-#     if not user_input:
-#         continue
-
-#     messages.append({"role": "user", "content": user_input})
-
-#     # Appel au LLM avec fonctions
-#     response = openai_client.chat.completions.create(
-#         model=chat_model,
-#         messages=messages,
-#         functions=functions,
-#         function_call="auto"
-#     )
-#     message = response.choices[0].message
-
-#     if message.function_call:
-#         # L'assistant veut appeler une fonction
-#         tool_name = message.function_call.name
-#         arguments = json.loads(message.function_call.arguments)
-#         logger.info(f"Appel fonction {tool_name} avec args {arguments}")
-#         result = call_function(tool_name, arguments)
-#         # Ajouter la réponse de la fonction à la conversation
-#         messages.append(message)  # le message avec function_call
-#         messages.append({
-#             "role": "function",
-#             "name": tool_name,
-#             "content": result
-#         })
-#         # Deuxième appel pour obtenir la réponse finale
-#         second_response = openai_client.chat.completions.create(
-#             model=chat_model,
-#             messages=messages
-#         )
-#         final_message = second_response.choices[0].message
-#         assistant_reply = final_message.content
-#         messages.append({"role": "assistant", "content": assistant_reply})
-#         print(f"\nAssistant: {assistant_reply}")
-#     else:
-#         # Réponse directe
-#         assistant_reply = message.content
-#         messages.append({"role": "assistant", "content": assistant_reply})
-#         print(f"\nAssistant: {assistant_reply}")
+            logger.debug(messages)
+            # Deuxième appel pour obtenir la réponse finale
+            second_response = openai_client.chat.completions.create(
+                model=chat_model,
+                messages=messages
+            )
+            final_message = second_response.choices[0].message
+            assistant_reply = final_message.content
+            messages.append({"role": "assistant", "content": assistant_reply})
+            print(f"\nAssistant: {assistant_reply}")
+        else:
+            # Réponse directe
+            assistant_reply = message.content
+            messages.append({"role": "assistant", "content": assistant_reply})
+            print(f"\nAssistant: {assistant_reply}")
