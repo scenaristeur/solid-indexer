@@ -13,11 +13,6 @@ import json
 import time
 import logging
 from logging.handlers import RotatingFileHandler
-from solid_auth import SolidAuthenticatedSession
-
-from dotenv import load_dotenv
-
-load_dotenv()  # reads variables from a .env file and sets them in os.environ
 
 from urllib.parse import urlparse
 
@@ -43,7 +38,7 @@ from urllib.parse import urlparse
 # handler.setFormatter(formatter)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
-    'logs/solid_index.log',  # Nom du fichier de log
+    'logs/solid_indexer.log',  # Nom du fichier de log
     mode='a',
     maxBytes=5*1024*1024, 
     backupCount=3,
@@ -65,7 +60,7 @@ class SolidIndexer:
     Parcourt les conteneurs, extrait les métadonnées, vectorise les textes et suit les URI RDF.
     """
 
-    def __init__(self, collection_name="solid_memory", persist_directory="./chroma_db"):
+    def __init__(self, session, collection_name="solid_memory", persist_directory="./chroma_db"):
         """
         Initialise le client ChromaDB et crée/récupère une collection.
         """
@@ -76,11 +71,7 @@ class SolidIndexer:
             metadata={"hnsw:space": "cosine"}
         )
         # self.session = requests.Session()
-        self.session = SolidAuthenticatedSession(
-            idp_url=os.getenv("SOLID_IDP_URL"),  # ex: https://solid.example.com
-            client_id=os.getenv("SOLID_CLIENT_ID"),
-            client_secret=os.getenv("SOLID_CLIENT_SECRET")
-        )
+        self.session = session
 
         # Pour les requêtes non authentifiées (ex: HEAD sur des ressources publiques ?), gardez aussi une session requests simple.
         self.public_session = requests.Session()

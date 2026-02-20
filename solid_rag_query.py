@@ -3,10 +3,27 @@ import chromadb
 from chromadb.config import Settings
 from dotenv import load_dotenv
 import logging
+from logging.handlers import RotatingFileHandler
 
 # Chargement des variables d'environnement (pour le LLM optionnel)
 load_dotenv()
-logger = logging.getLogger("solid_rag")
+# logger = logging.getLogger("solid_rag")
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+handler = RotatingFileHandler(
+    'logs/solid_rag_query.log',  # Nom du fichier de log
+    mode='a',
+    maxBytes=5*1024*1024, 
+    backupCount=3,
+    encoding=None,
+    delay=0
+    )
+# Configurer le format et le niveau
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger = logging.getLogger("solid_rag_query")
+logger.addHandler(handler)
+
+logger.info("********** Loading rag_query")
 
 # Tentative d'import d'OpenAI uniquement si la clé est présente
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

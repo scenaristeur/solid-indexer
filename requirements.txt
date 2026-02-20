@@ -7,3 +7,10 @@ beautifulsoup4
 cryptography
 jose
 openai
+
+# chromadb vizu
+# sklearn deprecated
+scikit-learn
+plotly
+pandas
+
