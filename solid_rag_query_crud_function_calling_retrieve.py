@@ -22,64 +22,54 @@ CONFIG={
     "log_file": 'logs/assistant_solid_indexer.log',
     "collection_name":"mon_pod",
     "persist_directory":"./chroma_storage",
+    "base_container":"http://localhost:3000/david/notes/"
 }
 
-
+# LOGGER
 logger = LoggerFactory(log_file=CONFIG['log_file'], logging_level=CONFIG['logging_level'], logger_name=CONFIG['logger_name']).logger
-
 # Configure logging to show info but suppress noisy libraries
-# logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+# logging.basicConfig(level=logging.DEBUG)
 # logging.getLogger("solid_auth").setLevel(logging.WARNING)
 
-logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
-logging.info("f[CONFIG] {config}")
-til = ToolsInternalCommands()
-
-
-indexer = SolidIndexer(collection_name=collection_name, persist_directory=persist_directory)
-rag = SolidRAG(collection_name=collection_name, persist_directory=persist_directory)
-
-
-
-with open('tools.json') as f:
-    tools = json.load(f)
-
-    # print(data)
-
-# Initialisation de la session Solid
+# MODULES
+indexer = SolidIndexer(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
+rag = SolidRAG(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
 session = SolidAuthenticatedSession(
     idp_url=os.getenv("SOLID_IDP_URL"),
     client_id=os.getenv("SOLID_CLIENT_ID"),
     client_secret=os.getenv("SOLID_CLIENT_SECRET")
 )
-# print("session",session)
-
-base_container="http://localhost:3000/david/notes/"
-# webid= "http://localhost:3000/david/profile/card#me"
-# webid = session.get_webid()
-# print(webid)  # Affiche http://localhost:3000/david/profile/card#me
-
-# print( session.toJSON())
-# Initialisation
-# store = SolidVersionedStore(session, base_container="http://localhost:3000/david/notes/")
-store = SolidCRUDStore(session, base_container="http://localhost:3000/david/notes/", webid=session.webid)
-
+store = SolidCRUDStore(session, base_container=CONFIG['base_container'], webid=session.webid)
 # Client OpenAI
 openai_client = OpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 chat_model = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")
+til = ToolsInternalCommands()
 
+# LOAD TOOLS
+with open('tools.json') as f:
+    tools = json.load(f)
+
+# PROMPTS
 system_prompt = f"""Tu es un assistant personnel qui gère des notes sur un pod Solid.
 Tu as accès à des fonctions pour créer, modifier, supprimer et lister des notes.
-Le container de base est : {base_container}
+Le container de base est : {CONFIG['base_container']}
 Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note'.
 N'écris pas de longs discours : utilise les fonctions pour agir directement.
 Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
+Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
 Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
 """
 messages = [{"role": "system", "content": system_prompt}]
+
+
+# MAIN
+logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
+logging.info("f[CONFIG] {config}")
+
+
 
 def call_function(name, args):
     if name == "create_note":
@@ -152,14 +142,11 @@ def call_llm(messages, tool_calls):
                 "name": tool_call.function.name,
                 "content": result
             })
-
             logger.debug(f"******* MESSAGES AFTER TOOL_CALL\n{messages}\n**********\n")
-
             return False, tool_calls, message
-
-            # Réponse directe
         else:
-            logger.debug(f"******* message.tool_calls False")
+            # Réponse directe
+            logger.debug(f"******* REPONSE DIRECTE message.tool_calls False")
             return True, tool_calls, message
     except Exception as e:
         logger.debug(f"******* ERREUR CALL_LLM\n{e}\n**********\n")
@@ -170,23 +157,22 @@ def call_llm(messages, tool_calls):
 
 print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm")
 while True:
-    logger.debug(f"\n\n******* start new conversation loop")
+    logger.debug(f"\n\n############# START NEW CONVERSATION LOOP ################################")
     user_input = input("\nVous: ").strip()
     logger.debug(f"\n******\n USER_INPUT\n{user_input}\n******\n")
     if user_input.lower() in ('quit', 'exit'):
         break
     elif user_input.startswith(':'):
-        print("TODO: commandes internes : cd, ls, mkdir...")
+        logger.info("TODO: commandes internes : cd, ls, mkdir...")
         internal_command_result = til.process({"user_input": user_input})
         continue
     elif user_input.startswith(':'):
-        print("TODO: commandes llm (enchaine comande + llm)...")
+        logger.info("TODO: commandes llm (enchaine comande + llm)...")
     if not user_input:
         continue
 
     if len(user_input) > 0:
         messages.append({"role": "user", "content": user_input})
-
         tool_calls = 0
         done = False
         while done is not True and tool_calls < tool_calls_limit:
