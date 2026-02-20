@@ -10,7 +10,8 @@ openai
 
 # chromadb vizu
 # sklearn deprecated
-scikit-learn
-plotly
-pandas
+# scikit-learn
+# plotly
+# pandas
+
 

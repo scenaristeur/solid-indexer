@@ -1,5 +1,8 @@
 #https://medium.com/@DevChris01/3d-embedding-visualization-with-python-and-chromadb-8189f696c8a8 # sklearn deprecated
 # https://github.com/mtybadger/chromaviz
+
+# TODO : combine with test_chroma.py
+
 import chromadb
 from chromadb.config import Settings
 from sklearn.decomposition import PCA
@@ -18,7 +21,8 @@ collection = client.get_collection(
 )
 embeddings = collection.get(include=['embeddings'])['embeddings']
 docs = collection.get(include=['embeddings'])['ids']
-
+print(embeddings)
+print (docs)
 
 # Reduce the embedding dimensionality
 pca = PCA(n_components=3)
