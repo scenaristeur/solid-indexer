@@ -41,20 +41,20 @@ from urllib.parse import urlparse
 # # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # formatter = logging.Formatter('%(asctime)s - %(levelname)s - [INDEX]: %(message)s')
 # handler.setFormatter(formatter)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-handler = RotatingFileHandler(
-    'logs/solid_index.log',  # Nom du fichier de log
-    mode='a',
-    maxBytes=5*1024*1024, 
-    backupCount=3,
-    encoding=None,
-    delay=0
-    )
-# Configurer le format et le niveau
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# handler = RotatingFileHandler(
+#     'logs/solid_index.log',  # Nom du fichier de log
+#     mode='a',
+#     maxBytes=5*1024*1024, 
+#     backupCount=3,
+#     encoding=None,
+#     delay=0
+#     )
+# # Configurer le format et le niveau
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+# handler.setFormatter(formatter)
 logger = logging.getLogger("solid_indexer")
-logger.addHandler(handler)
+# logger.addHandler(handler)
 
 logger.info("********** Loading indexer")
 

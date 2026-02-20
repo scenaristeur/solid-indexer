@@ -49,8 +49,8 @@ logger = logging.getLogger(CONFIG['logger_name'])
 logger.setLevel(CONFIG['logging_level'])
 logger.addHandler(handler)
 # DEBUG BY MODULE
-logging.getLogger('solid_auth').setLevel(logging.INFO)
-logging.getLogger('solid_indexer').setLevel(logging.DEBUG)
+# logging.getLogger('solid_auth').setLevel(logging.INFO)
+# logging.getLogger('solid_indexer').setLevel(logging.DEBUG)
 
 # MODULES
 session = SolidAuthenticatedSession(
@@ -58,7 +58,7 @@ session = SolidAuthenticatedSession(
     client_id=os.getenv("SOLID_CLIENT_ID"),
     client_secret=os.getenv("SOLID_CLIENT_SECRET")
 )
-indexer = SolidIndexer(session = session, collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
+indexer = SolidIndexer(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
 rag = SolidRAG(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
 
 store = SolidCRUDStore(session, base_container=CONFIG['base_container'], webid=session.webid)
