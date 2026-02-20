@@ -1,6 +1,7 @@
 .venv
 .env
 __pycache__
+.pytest_cache
 chroma_storage
 visited.json
 data
