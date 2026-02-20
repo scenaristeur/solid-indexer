@@ -1,3 +1,4 @@
+# CORE
 chromadb
 requests
 rdflib
@@ -8,6 +9,11 @@ cryptography
 jose
 openai
 pytest
+
+# GUI
+flask
+flask-cors
+
 
 # chromadb vizu
 # sklearn deprecated
