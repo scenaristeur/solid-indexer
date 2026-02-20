@@ -36,7 +36,9 @@ CHAT_MODEL=provider/MyModel-3-8B-Instruct-2512
 python -m venv .venv
 . .venv/bin/activate
 python install -r requirements.txt
-~/dev/solid-indexer$ python solid_rag_query_crud_function_calling_retrieve.py
+
+# lancer l'assistant
+(.venv)~/dev/solid-indexer$ ./assistant.sh
 
 ```
 

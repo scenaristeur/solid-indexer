@@ -1,44 +1,41 @@
 import os
 from dotenv import load_dotenv
-from solid_auth import SolidAuthenticatedSession
+import logging
 import json
+from openai import OpenAI
+from core.LoggerFactory import LoggerFactory
+from solid_auth import SolidAuthenticatedSession
+
 # from solid_versioned_store import SolidVersionedStore
 from solid_crud_store import SolidCRUDStore
 from solid_rag_query import SolidRAG
 from solid_indexer import SolidIndexer
-from openai import OpenAI
-import logging
-from logging.handlers import RotatingFileHandler
+
+
 from tools.internal.commands import ToolsInternalCommands
-
-tool_calls_limit = 6
-
 load_dotenv()
-# Créer un logger et ajouter le handler
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# CONFIG
+CONFIG={
+    "tool_calls_limit": 6,
+    "logger_name": "assistant_core",
+    "logging_level": logging.DEBUG,
+    "log_file": 'logs/assistant_solid_indexer.log',
+    "collection_name":"mon_pod",
+    "persist_directory":"./chroma_storage",
+}
 
-# Configurer un RotatingFileHandler
-handler = RotatingFileHandler(
-    'logs/rag_query_crud.log',  # Nom du fichier de log
-    maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
-    backupCount=3  # Nombre de fichiers de sauvegarde
-)
 
-# Configurer le format et le niveau
-# https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - [MAIN] - %(message)s')
-handler.setFormatter(formatter)
+logger = LoggerFactory(log_file=CONFIG['log_file'], logging_level=CONFIG['logging_level'], logger_name=CONFIG['logger_name']).logger
 
-logger.addHandler(handler)
-
+# Configure logging to show info but suppress noisy libraries
+# logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+# logging.getLogger("solid_auth").setLevel(logging.WARNING)
 
 logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
-
+logging.info("f[CONFIG] {config}")
 til = ToolsInternalCommands()
 
-collection_name="mon_pod"
-persist_directory="./chroma_storage"
+
 indexer = SolidIndexer(collection_name=collection_name, persist_directory=persist_directory)
 rag = SolidRAG(collection_name=collection_name, persist_directory=persist_directory)
 
@@ -123,7 +120,7 @@ def call_function(name, args):
 
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
-    logger.debug(f"******* start call_llm with tool_calls already done : { tool_calls}")
+    logger.debug(f"########################### START NEW CALL_LLM with tool_calls already done = { tool_calls}")
     # logger.debug(f"******* TOOLS\n{ json.dumps(tools, indent=4)}\n**********\n")
     logger.debug(f"******* MESSAGES\n{messages}\n**********\n")
     try : 
@@ -194,7 +191,7 @@ while True:
         done = False
         while done is not True and tool_calls < tool_calls_limit:
             result = call_llm(messages= messages, tool_calls=tool_calls)
-            logger.debug(f"CALL_LLM_RESULT: {result}")
+            logger.debug(f"CALL_LLM_RESULT with done boolean, tool_calls counter and assistant reply: {result}")
             done, tool_calls, message = result
             logger.debug(f"DONE: {done}")
             logger.debug(f"TOOL_CALLS_AFTER: {tool_calls}")
@@ -203,39 +200,3 @@ while True:
         messages.append({"role": "assistant", "content": assistant_reply})
         print(f"\nAssistant: {assistant_reply}")
 
-
-            # # Vérifier si le modèle a demandé d'appeler une fonction
-            # if message.tool_calls:
-            #     tool_calls+=1
-            #     logger.info(f"[TOOL CALL]: {tool_calls}")
-            #     tool_call = message.tool_calls[0]
-            #     tool_name = tool_call.function.name
-            #     arguments = json.loads(tool_call.function.arguments)
-            #     logger.info(f"Appel fonction {tool_name} avec args {arguments}")
-            #     result = call_function(tool_name, arguments)
-            #     logger.info(f"result {result}")
-            #     # Ajouter la réponse de la fonction à la conversation
-            #     messages.append(message)  # le message avec tool_call
-            #     messages.append({
-            #     "role": "tool",
-            #         "tool_call_id": tool_call.id,
-            #         "name": tool_call.function.name,
-            #         "content": result
-            #     })
-
-            #     # logger.debug(messages)
-            #     # Deuxième appel pour obtenir la réponse finale
-            #     second_response = openai_client.chat.completions.create(
-            #         model=chat_model,
-            #         messages=messages
-            #     )
-            #     final_message = second_response.choices[0].message
-            #     assistant_reply = final_message.content
-            #     messages.append({"role": "assistant", "content": assistant_reply})
-            #     print(f"\nAssistant: {assistant_reply}")
-                
-            # else:
-            #     # Réponse directe
-            #     assistant_reply = message.content
-            #     messages.append({"role": "assistant", "content": assistant_reply})
-            #     print(f"\nAssistant: {assistant_reply}")

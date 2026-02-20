@@ -27,8 +27,8 @@ from urllib.parse import urlparse
 # logger = logging.getLogger(__name__)
 
 # Créer un logger et ajouter le handler
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("solid_indexer")
+# logger.setLevel(logging.INFO)
 
 # Configurer un RotatingFileHandler
 handler = RotatingFileHandler(

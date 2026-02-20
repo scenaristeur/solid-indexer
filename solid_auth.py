@@ -12,8 +12,7 @@ from jose.constants import ALGORITHMS
 from pprint import pformat
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("solid_auth")
 
 class SolidAuthenticatedSession:
     def __init__(self, idp_url, client_id, client_secret):

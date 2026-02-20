@@ -5,8 +5,7 @@ import logging
 
 # Chargement des variables d'environnement (pour le LLM optionnel)
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("solid_rag")
 
 # Tentative d'import d'OpenAI uniquement si la clé est présente
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
