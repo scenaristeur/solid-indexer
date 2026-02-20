@@ -1,5 +1,6 @@
 import os
 import chromadb
+from chromadb.config import Settings
 from dotenv import load_dotenv
 import logging
 
@@ -21,7 +22,7 @@ class SolidRAG:
 
     def __init__(self, collection_name="mon_pod", persist_directory="./chroma_storage"):
         # Connexion à la base ChromaDB persistante
-        self.client = chromadb.PersistentClient(path=persist_directory)
+        self.client = chromadb.PersistentClient(path=persist_directory, settings=Settings(anonymized_telemetry=False))
         self.collection = self.client.get_collection(collection_name)
 
         # Configuration optionnelle pour la génération via LLM

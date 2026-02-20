@@ -27,24 +27,36 @@ from urllib.parse import urlparse
 # logger = logging.getLogger(__name__)
 
 # Créer un logger et ajouter le handler
-logger = logging.getLogger("solid_indexer")
+
 # logger.setLevel(logging.INFO)
 
-# Configurer un RotatingFileHandler
+# # Configurer un RotatingFileHandler
+# handler = RotatingFileHandler(
+#     'logs/solid_indexer.log',  # Nom du fichier de log
+#     maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
+#     backupCount=3  # Nombre de fichiers de sauvegarde
+# )
+
+# # Configurer le format et le niveau
+# # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s - [INDEX]: %(message)s')
+# handler.setFormatter(formatter)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
-    'logs/solid_indexer.log',  # Nom du fichier de log
-    maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
-    backupCount=3  # Nombre de fichiers de sauvegarde
-)
-
+    'logs/solid_index.log',  # Nom du fichier de log
+    mode='a',
+    maxBytes=5*1024*1024, 
+    backupCount=3,
+    encoding=None,
+    delay=0
+    )
 # Configurer le format et le niveau
-# https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - [INDEX]: %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
-
+logger = logging.getLogger("solid_indexer")
 logger.addHandler(handler)
 
-logging.info("********** Loading indexer")
+logger.info("********** Loading indexer")
 
 
 class SolidIndexer:
@@ -58,7 +70,7 @@ class SolidIndexer:
         Initialise le client ChromaDB et crée/récupère une collection.
         """
         self.base_domain = None
-        self.client = chromadb.PersistentClient(path=persist_directory)
+        self.client = chromadb.PersistentClient(path=persist_directory, settings=Settings(anonymized_telemetry=False))
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
             metadata={"hnsw:space": "cosine"}

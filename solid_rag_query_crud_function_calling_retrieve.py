@@ -17,18 +17,21 @@ load_dotenv()
 CONFIG={
     "tool_calls_limit": 6,
     "logger_name": "assistant_core",
-    "logging_level": logging.DEBUG,
+    "logging_level": logging.INFO,
     "log_file": 'logs/assistant_solid_indexer.log',
     "collection_name":"mon_pod",
     "persist_directory":"./chroma_storage",
     "base_container":"http://localhost:3000/david/notes/",
-    "tools_definition": 'tools.json'
+    "tools_definition": 'tools.json',
+    "assistant_name": "Assistant",
+    "premier_message": "Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm"
 }
 
 # LOGGER
 # Configuration basique du logger
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
+# https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
@@ -45,6 +48,9 @@ handler.setFormatter(formatter)
 logger = logging.getLogger(CONFIG['logger_name'])
 logger.setLevel(CONFIG['logging_level'])
 logger.addHandler(handler)
+# DEBUG BY MODULE
+logging.getLogger('solid_auth').setLevel(logging.INFO)
+logging.getLogger('solid_indexer').setLevel(logging.DEBUG)
 
 # MODULES
 indexer = SolidIndexer(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
@@ -75,6 +81,7 @@ Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonctio
 N'écris pas de longs discours : utilise les fonctions pour agir directement.
 Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
 Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
+Pou
 Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
 """
 messages = [{"role": "system", "content": system_prompt}]
@@ -82,49 +89,55 @@ messages = [{"role": "system", "content": system_prompt}]
 
 # MAIN
 
-logger.info(f"[CONFIG] {json.dumps(CONFIG, indent=4)}")
-logger.info(f"[TOOLS] {json.dumps(tools, indent=4)}")
-logger.info(f"[SYSTEM_PROMPT] {json.dumps(system_prompt, indent=4)}")
-logger.info("_________________________________NEW SESSION__________________________")
+logger.debug(f"[CONFIG] {json.dumps(CONFIG, indent=4)}")
+logger.debug(f"[TOOLS] {json.dumps(tools, indent=4)}")
+logger.debug(f"[SYSTEM_PROMPT] {json.dumps(system_prompt, indent=4)}")
+logger.debug("_________________________________NEW SESSION__________________________")
 
 
 
 def call_function(name, args):
-    if name == "create_note":
-        uri = store.create_note(args["title"], args["content"], tags=args.get("tags", ""))
-        return f"Note créée : {uri}"
-    elif name == "read_note":
-        content = store.read_note(args["uri"])
-        return json.dumps(content) if content else "Échec suppression"
-    elif name == "update_note":
-        # adapter si update_note attend new_content et autres paramètres
-        success = store.update_note(args["uri"], args["new_content"])
-        return "Note mise à jour" if success else "Échec mise à jour"
-    elif name == "delete_note":
-        success = store.delete_note(args["uri"])
-        return "Note supprimée" if success else "Échec suppression"
-    elif name == "list_notes":
-        notes = store.list_notes()
-        # notes = store.list_notes(args["uri"])
-        if notes:
-            return "Notes trouvées :\n" + "\n".join(notes)
+    try: 
+        if name == "create_note":
+            uri = store.create_note(args["title"], args["content"], tags=args.get("tags", ""))
+            return f"Note créée : {uri}"
+        elif name == "read_note":
+            content = store.read_note(args["uri"])
+            return json.dumps(content) if content else "Échec suppression"
+        elif name == "update_note":
+            # adapter si update_note attend new_content et autres paramètres
+            success = store.update_note(args["uri"], args["new_content"])
+            return "Note mise à jour" if success else "Échec mise à jour"
+        elif name == "delete_note":
+            success = store.delete_note(args["uri"])
+            return "Note supprimée" if success else "Échec suppression"
+        elif name == "list_notes":
+            notes = store.list_notes()
+            # notes = store.list_notes(args["uri"])
+            if notes:
+                return "Notes trouvées :\n" + "\n".join(notes)
+            else:
+                return "Aucune note trouvée."
+        elif name == "retrieve":
+            context = rag.retrieve(args["query"])
+            
+            # Convertir le contexte en format texte lisible
+            if context:
+                context_text = "\n\n---\n\n".join(
+                    f"Document (source: {item[1]['uri']}):\n{item[0]}"
+                    for item in context
+                )
+                return context_text
+        elif name == "index":
+            success = indexer.run(CONFIG['base_container'])
+            return "Notes indexes" if success else "Échec index"
         else:
-            return "Aucune note trouvée."
-    elif name == "retrieve":
-        context = rag.retrieve(args["query"])
-        
-        # Convertir le contexte en format texte lisible
-        if context:
-            context_text = "\n\n---\n\n".join(
-                f"Document (source: {item[1]['uri']}):\n{item[0]}"
-                for item in context
-            )
-            return context_text
-    elif name == "index":
-        success = indexer.run(base_container)
-        return "Notes indexes" if success else "Échec index"
-    else:
-        return "Fonction inconnue"
+            return "Fonction inconnue"
+    except Exception as e:
+        # logger.debug(f"******* ERREUR CALL_LLM\n{e}\n**********\n")
+        # logger.error(f"Erreur call_llm: {e}")
+        logger.error("Une erreur est survenue dans call_function", exc_info=True)
+        return True, tool_calls, e
 
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
@@ -174,7 +187,8 @@ def call_llm(messages, tool_calls):
 
 
 
-print("Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm")
+print(CONFIG['premier_message'])
+logger.debug(CONFIG['premier_message'])
 while True:
     logger.debug(f"\n\n############# START NEW CONVERSATION LOOP ################################")
     user_input = input("\nVous: ").strip()
@@ -203,5 +217,6 @@ while True:
 
         assistant_reply = message.content
         messages.append({"role": "assistant", "content": assistant_reply})
-        print(f"\nAssistant: {assistant_reply}")
+        print(f"{CONFIG['assistant_name']}: {assistant_reply}")
+        logger.debug(f"{CONFIG['assistant_name']}: {assistant_reply}")
 

@@ -30,6 +30,7 @@ class SolidAuthenticatedSession:
         self._discover_endpoints()
         self.userinfo_endpoint = None
         self.webid = None
+        logger.debug(f"session créée")
         # pformat(vars(self.session), indent=4, width=1)
 
 
@@ -166,6 +167,7 @@ class SolidAuthenticatedSession:
         req = self.session.request('HEAD', self.idp_url)
         claims = jwt.get_unverified_claims(self.access_token)
         self.webid = claims['webid']
+        logger.info(f"Solid session webid {self.webid}")
 
     def get_webid(self):
         """Retourne le WebID, le récupère si nécessaire."""
