@@ -22,5 +22,11 @@ class LoggerFactory:
 
         self.logger.addHandler(handler)
 
-    # def logger():
-    #     return self.logger
+    def test():
+        # Exemples de messages de log
+        self.logging.debug("Ceci est un message de débogage.")
+        self.logging.info("Ceci est un message d'information.")
+        self.logging.warning("Ceci est un message d'avertissement.")
+        self.logging.error("Ceci est un message d'erreur.")
+        self.logging.critical("Ceci est un message critique.")
+

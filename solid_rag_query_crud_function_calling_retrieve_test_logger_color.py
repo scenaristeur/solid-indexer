@@ -6,6 +6,8 @@ import json
 from openai import OpenAI
 
 from solid_auth import SolidAuthenticatedSession
+# from solid_versioned_store import SolidVersionedStore
+# from core.LoggerFactory import LoggerFactory
 from solid_crud_store import SolidCRUDStore
 from solid_rag_query import SolidRAG
 from solid_indexer import SolidIndexer
@@ -21,30 +23,86 @@ CONFIG={
     "log_file": 'logs/assistant_solid_indexer.log',
     "collection_name":"mon_pod",
     "persist_directory":"./chroma_storage",
-    "base_container":"http://localhost:3000/david/notes/",
-    "tools_definition": 'tools.json'
+    "base_container":"http://localhost:3000/david/notes/"
 }
 
 # LOGGER
 # Configuration basique du logger
-# https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
-# https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Exemples de messages de log
+# logging.debug("Ceci est un message de débogage.")
+# logging.info("Ceci est un message d'information.")
+# logging.warning("Ceci est un message d'avertissement.")
+# logging.error("Ceci est un message d'erreur.")
+# logging.critical("Ceci est un message critique.")
+# Configurer un RotatingFileHandler
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
-    mode='a',
-    maxBytes=5*1024*1024, 
-    backupCount=3,
-    encoding=None,
-    delay=0
-    )
-# Configurer le format et le niveau
+    maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
+    backupCount=3  # Nombre de fichiers de sauvegarde
+)
+
+# # Configurer le format et le niveau
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
+
+
+
+# https://betterstack.com/community/questions/how-to-color-python-logging-output/
+# class CustomFormatter(logging.Formatter):
+#     grey = "\\x1b[38;21m"
+#     yellow = "\\x1b[33;21m"
+#     red = "\\x1b[31;21m"
+#     bold_red = "\\x1b[31;1m"
+#     reset = "\\x1b[0m"
+#     format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+#     FORMATS = {
+#         logging.DEBUG: grey + format + reset,
+#         logging.INFO: grey + format + reset,
+#         logging.WARNING: yellow + format + reset,
+#         logging.ERROR: red + format + reset,
+#         logging.CRITICAL: bold_red + format + reset
+#     }
+
+#     def format(self, record):
+#         log_fmt = self.FORMATS.get(record.levelno)
+#         formatter = logging.Formatter(log_fmt)
+#         return formatter.format(record)
+# handler = logging.StreamHandler()
+# handler.setFormatter(CustomFormatter())
+
 # Créer un logger et ajouter le handler
 logger = logging.getLogger(CONFIG['logger_name'])
 logger.setLevel(CONFIG['logging_level'])
 logger.addHandler(handler)
+
+# Exemple de messages de log
+# logger.debug("Log de débogage")
+# logger.info("Log d'information")
+# logger.warning("Log d'avertissement")
+
+
+logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
+# # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
+# #logger = LoggerFactory(log_file=CONFIG['log_file'], logging_level=CONFIG['logging_level'], logger_name=CONFIG['logger_name']).logger
+# logging.basicConfig(level=CONFIG['logging_level'], format="%(asctime)s - %(levelname)s - %(message)s")
+# logger = logging.getLogger(CONFIG['logger_name'])
+# # Configurer un RotatingFileHandler
+# handler = RotatingFileHandler(
+#         CONFIG['log_file'],  # Nom du fichier de log
+#         maxBytes=5000,  # Taille maximale du fichier en octets (ici, 5 Ko)
+#         backupCount=3  # Nombre de fichiers de sauvegarde
+#     )
+# # Configurer le format et le niveau
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+# handler.setFormatter(formatter)
+# logger.addHandler(handler)
+# # Configure logging to show info but suppress noisy libraries
+# # logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# # logging.getLogger("solid_auth").setLevel(logging.WARNING)
+
 
 # MODULES
 indexer = SolidIndexer(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
@@ -64,7 +122,7 @@ chat_model = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")
 til = ToolsInternalCommands()
 
 # LOAD TOOLS
-with open(CONFIG['tools_definition']) as f:
+with open('tools.json') as f:
     tools = json.load(f)
 
 # PROMPTS
@@ -81,11 +139,8 @@ messages = [{"role": "system", "content": system_prompt}]
 
 
 # MAIN
-
-logger.info(f"[CONFIG] {json.dumps(CONFIG, indent=4)}")
-logger.info(f"[TOOLS] {json.dumps(tools, indent=4)}")
-logger.info(f"[SYSTEM_PROMPT] {json.dumps(system_prompt, indent=4)}")
-logger.info("_________________________________NEW SESSION__________________________")
+logging.info("[MAIN] - ******************************************NEW SESSION**************************************")
+logging.info("f[CONFIG] {config}")
 
 
 
