@@ -1,3 +1,8 @@
+# https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
+import sys
+# caution: path[0] is reserved for script path (or '' in REPL)
+sys.path.insert(1, '../')
+
 import chromadb
 client = chromadb.PersistentClient(path="./chroma_storage")
 collection = client.get_collection("mon_pod")
