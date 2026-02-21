@@ -1,6 +1,10 @@
 # Assistant Solid
 
+- [About](https://forum.solidproject.org/t/solid-indexer-assistant/10323/5)
+
 - lancement d'un serveur Solid Community Serveur servant de base de connaissance où sont stockées les données.
+- https://communitysolidserver.github.io/CommunitySolidServer/latest/
+- https://solidlab.be/community-solid-server/
 
 ```
 npm install -g @solid/community-server
@@ -190,3 +194,24 @@ test_function_calling_model.py
 # get webid and other server infos
 
 - https://github.com/CommunitySolidServer/CommunitySolidServer/discussions/2118
+
+# TODO
+
+- ansible playbook Installer / docker
+- Resources versioning
+- Subfolders
+- Multipods indexer / agent :
+  - follow links to other pods and index / CRUD on other pods
+  - the agent has is own pod / is the owner of several pods
+- extrem datasources/databases, acts on :
+  - IPFS
+  - Supabse
+  - GunDB...
+- agregate multiple tools in a folder / local dist resources
+- manage context length and subdivisions, fast and archives memories -> automemorize when context overflow or on important things, profiles, like memGPT/letta or memU
+- store conversation history on pod
+- remove from index when resource deleted, or update as archive for history
+- verify predicat indexation
+- not only content predicat but all predicats and links to other resources
+- add reranking tools for better results
+- [] autoinitialisation from local and/or dist Solid Resources
