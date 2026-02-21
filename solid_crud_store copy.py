@@ -45,10 +45,8 @@ class SolidCRUDStore:
                                     headers={'Content-Type': 'text/turtle'})
         if resp.status_code in (200, 201, 205):
             logger.info(f"✅ ACL créé pour {uri}")
-            return (f"✅ ACL créé pour {uri}")
         else:
             logger.error(f"❌ Échec création ACL pour {uri}: {resp.status_code}")
-            return (f"❌ Échec création ACL pour {uri}: {resp.status_code}")
 
     def _ensure_container(self, container_uri):
         resp = self.session.request('HEAD', container_uri)
@@ -59,15 +57,12 @@ class SolidCRUDStore:
                          'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
             if resp.status_code in (200, 201):
                 logger.info(f"✅ Conteneur {container_uri} créé")
-                acl_result = self._set_acl(container_uri)
+                self._set_acl(container_uri)
                 time.sleep(1)  # laisser l'ACL s'appliquer
-                return (f"✅ Conteneur {container_uri} créé, {acl_result}")
             else:
                 logger.error(f"❌ Échec création conteneur {container_uri}: {resp.status_code}")
-                return (f"❌ Échec création conteneur {container_uri}: {resp.status_code}")
         elif resp.status_code != 200:
             logger.warning(f"HEAD sur {container_uri} a retourné {resp.status_code}")
-            return (f"HEAD sur {container_uri} a retourné {resp.status_code}")
 
     def create_note(self, uri, name, content, **extra):
         """
@@ -77,7 +72,7 @@ class SolidCRUDStore:
         extra: paires clé-valeur pour métadonnées supplémentaires (ex: tags="tag1,tag2")
         Retourne l'URI de la note.
         """
-        container_result = self._ensure_container(uri or self.base_container)
+        self._ensure_container(self.base_container)
 
         note_uri = urljoin(uri or self.base_container, name + '.ttl')
 
@@ -98,7 +93,7 @@ class SolidCRUDStore:
             return note_uri
         else:
             logger.error(f"❌ Échec création note {note_uri}: {resp.status_code}")
-            return f("❌ Échec création note {note_uri}: {resp.status_code}, container creation result : {container_result}")
+            return None
 
     def read_note(self, uri):
         resp = self.session.request('GET', uri, headers={'Accept': 'text/turtle'})
@@ -143,8 +138,8 @@ class SolidCRUDStore:
             logger.error(f"❌ Échec suppression {uri}: {resp.status_code}")
             return False
 
-    def list_notes(self, uri):
-        container_uri = uri or self.base_container
+    def list_notes(self):
+        container_uri = self.base_container
         resp = self.session.request('GET', container_uri, headers={'Accept': 'text/turtle'})
         if resp.status_code != 200:
             logger.error(f"Impossible de lister le conteneur {container_uri}: {resp.status_code}")

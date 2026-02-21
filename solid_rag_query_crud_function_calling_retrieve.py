@@ -24,15 +24,15 @@ CONFIG={
     "base_container":"http://localhost:3000/david/notes/",
     "tools_definition": 'tools.json',
     "assistant_name": "Assistant",
-    "premier_message": "Assistant prêt. Tapez votre question (ou 'quit' pour quitter), ':commande [params]' pour les commandes internes, '/commande [params]' pour les commandes llm"
+    "premier_message": "Assistant prêt. Tapez votre question (ou 'quit' pour quitter), 'commande [params]' pour les commandes internes (cd, rm, ls, mkdir...), '/commande [params]' pour les commandes llm"
 }
-
+current_path = CONFIG['base_container']
 # LOGGER
 # Configuration basique du logger
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 # https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
     mode='a',
@@ -82,7 +82,6 @@ Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonctio
 N'écris pas de longs discours : utilise les fonctions pour agir directement.
 Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
 Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
-Pou
 Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
 """
 messages = [{"role": "system", "content": system_prompt}]
@@ -113,7 +112,7 @@ def call_function(name, args):
             success = store.delete_note(args["uri"])
             return "Note supprimée" if success else "Échec suppression"
         elif name == "list_notes":
-            notes = store.list_notes()
+            notes = store.list_notes(args["uri"])
             # notes = store.list_notes(args["uri"])
             if notes:
                 return "Notes trouvées :\n" + "\n".join(notes)
@@ -188,17 +187,20 @@ def call_llm(messages, tool_calls):
 
 
 
-print(CONFIG['premier_message'])
+print(f"\n{CONFIG['premier_message']}")
 logger.debug(CONFIG['premier_message'])
 while True:
     logger.debug(f"\n\n############# START NEW CONVERSATION LOOP ################################")
+    print(f"current_path: {current_path}")
     user_input = input("\nVous: ").strip()
     logger.debug(f"\n******\n USER_INPUT\n{user_input}\n******\n")
     if user_input.lower() in ('quit', 'exit'):
         break
-    elif user_input.startswith(':'):
-        logger.info("TODO: commandes internes : cd, ls, mkdir...")
-        internal_command_result = til.process({"user_input": user_input})
+    elif user_input.split(' ', 1)[0] in til.commands:
+        # logger.info("TODO: commandes internes : cd, ls, mkdir...")
+        base_container=CONFIG['base_container']
+        internal_command_result = til.process({"user_input": user_input, "current_path": current_path, "base_container": base_container})
+        current_path = internal_command_result.get('current_path', current_path)
         continue
     elif user_input.startswith(':'):
         logger.info("TODO: commandes llm (enchaine comande + llm)...")
@@ -206,7 +208,8 @@ while True:
         continue
 
     if len(user_input) > 0:
-        messages.append({"role": "user", "content": user_input})
+        messages.append({"role": "user", "content": f"Le dossier courant est : {current_path}\n"+user_input})
+        print(messages[-1]) 
         tool_calls = 0
         done = False
         while done is not True and tool_calls < CONFIG['tool_calls_limit']:
@@ -218,6 +221,6 @@ while True:
 
         assistant_reply = message.content
         messages.append({"role": "assistant", "content": assistant_reply})
-        print(f"{CONFIG['assistant_name']}: {assistant_reply}")
+        print(f"\n{CONFIG['assistant_name']}: {assistant_reply}")
         logger.debug(f"{CONFIG['assistant_name']}: {assistant_reply}")
 

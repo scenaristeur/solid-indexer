@@ -215,7 +215,7 @@ test_function_calling_model.py
 - store conversation history on pod
 - remove from index when resource deleted, or update as archive for history
 - verify predicat indexation
-- not only content predicat but all predicats and links to other resources
+- not only content predicat but all predicats and links to other resources, https://fr.wikipedia.org/wiki/ActivityPub
 - add reranking tools for better results
 - [] autoinitialisation from local and/or dist Solid Resources
 - [ ] build tests
@@ -224,3 +224,11 @@ test_function_calling_model.py
 
 - https://zestedesavoir.com/tutoriels/2514/un-zeste-de-python/10-annexes/4-tests/
 - https://qkzk.xyz/docs/nsi/cours_premiere/programmation/tester/
+
+# OPENCODE
+
+- coding agent : https://opencode.ai/docs/fr
+
+# TOOLS SCHEMA
+
+- https://apxml.com/courses/building-advanced-llm-agent-tools/chapter-1-llm-agent-tooling-foundations/tool-input-output-schemas
