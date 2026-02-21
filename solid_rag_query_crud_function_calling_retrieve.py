@@ -97,16 +97,16 @@ logger.debug("_________________________________NEW SESSION______________________
 
 
 def call_function(name, args):
-    try: 
+    try:
         if name == "create_note":
-            uri = store.create_note(args['uri'],args["title"], args["content"], tags=args.get("tags", ""))
+            uri = store.create_note(args.get('uri', CONFIG['base_container']), args["title"], args["content"], tags=args.get("tags", ""), predicates=args.get("predicates", {}))
             return f"Note créée : {uri}"
         elif name == "read_note":
             content = store.read_note(args["uri"])
             return json.dumps(content) if content else "Échec suppression"
         elif name == "update_note":
             # adapter si update_note attend new_content et autres paramètres
-            success = store.update_note(args["uri"], args["new_content"])
+            success = store.update_note(args["uri"], args["new_content"], predicates=args.get("predicates", {}))
             return "Note mise à jour" if success else "Échec mise à jour"
         elif name == "delete_note":
             success = store.delete_note(args["uri"])
@@ -120,7 +120,7 @@ def call_function(name, args):
                 return "Aucune note trouvée."
         elif name == "retrieve":
             context = rag.retrieve(args["query"])
-            
+
             # Convertir le contexte en format texte lisible
             if context:
                 context_text = "\n\n---\n\n".join(

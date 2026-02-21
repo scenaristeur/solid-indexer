@@ -7,22 +7,26 @@
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI de la note à créer"
+                    },
                     "title": {
                         "type": "string",
                         "description": "Titre de la note (slug)"
                     },
-                    "content": {
-                        "type": "string",
-                        "description": "Contenu au format turtle de la note"
-                    },
-                    "tags": {
-                        "type": "string",
-                        "description": "Tags optionnels séparés par des virgules"
+                    "predicates": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "predicates for the note"
                     }
                 },
                 "required": [
+                    "uri",
                     "title",
-                    "content"
+                    "predicates"
                 ]
             }
         }
@@ -58,14 +62,21 @@
                         "type": "string",
                         "description": "URI de la note à modifier"
                     },
-                    "new_content": {
+                    "title": {
                         "type": "string",
-                        "description": "Nouveau contenu au format turtle"
+                        "description": "Titre de la note (slug)"
+                    },
+                    "predicates": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Additional predicates for the note"
                     }
                 },
                 "required": [
                     "uri",
-                    "new_content"
+                    "prdicates"
                 ]
             }
         }

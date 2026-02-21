@@ -7,17 +7,24 @@
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI de la note à créer"
+                    },
                     "title": {
                         "type": "string",
                         "description": "Titre de la note (slug)"
                     },
                     "content": {
                         "type": "string",
-                        "description": "Contenu textuel de la note"
+                        "description": "The content of the note"
                     },
-                    "tags": {
-                        "type": "string",
-                        "description": "Tags optionnels séparés par des virgules"
+                    "predicates": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Additional predicates for the note"
                     }
                 },
                 "required": [
@@ -58,14 +65,21 @@
                         "type": "string",
                         "description": "URI de la note à modifier"
                     },
-                    "new_content": {
+                    "content": {
                         "type": "string",
-                        "description": "Nouveau contenu"
+                        "description": "The new content of the note"
+                    },
+                    "predicates": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Additional predicates for the note"
                     }
                 },
                 "required": [
                     "uri",
-                    "new_content"
+                    "content"
                 ]
             }
         }
