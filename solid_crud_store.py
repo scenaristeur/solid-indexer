@@ -102,7 +102,7 @@ class SolidCRUDStore:
             return note_uri
         else:
             logger.error(f"❌ Échec création note {note_uri}: {resp.status_code}")
-            return f("❌ Échec création note {note_uri}: {resp.status_code}, container creation result : {container_result}")
+            return (f"❌ Échec création note {note_uri}: {resp.status_code}, container creation result : {container_result}")
 
     def update_note(self, uri, new_content, predicates=None, **extra):
         g = Graph()

@@ -32,7 +32,7 @@ current_path = CONFIG['base_container']
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 # https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
     mode='a',
@@ -158,11 +158,13 @@ def call_llm(messages, tool_calls):
         if message.tool_calls:
             logger.debug(f"******* message.tool_calls True")
             tool_calls+=1
-            logger.info(f"[TOOL CALL]: {tool_calls}")
+            logger.debug(f"[TOOL CALL]: {tool_calls}")
             tool_call = message.tool_calls[0]
             tool_name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
-            logger.info(f"Appel fonction {tool_name} avec args {arguments}")
+            logger.debug(f"Appel fonction {tool_name} avec args {arguments}")
+            logger.info(f"Appel fonction {tool_name} avec args {arguments[:500]}")
+            
             result = call_function(tool_name, arguments)
             logger.debug(f"********** TOOL_CALL RESULT\n{result}\n**********\n")
             # Ajouter la réponse de la fonction à la conversation
@@ -209,7 +211,7 @@ while True:
 
     if len(user_input) > 0:
         messages.append({"role": "user", "content": f"Le dossier courant est : {current_path}\n"+user_input})
-        print(messages[-1]) 
+        logger.debug(messages[-1]) 
         tool_calls = 0
         done = False
         while done is not True and tool_calls < CONFIG['tool_calls_limit']:
