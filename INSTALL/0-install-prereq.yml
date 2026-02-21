@@ -1,0 +1,10 @@
+---
+- name: Solid-indexer Prereq install
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+    - name: install Solid community server
+      shell: |
+        npm install -g @solid/community-server
+        exit 0

@@ -1,8 +1,10 @@
 # Assistant Solid
 
-- [About](https://forum.solidproject.org/t/solid-indexer-assistant/10323/5)
+- [About/ Discoussions](https://forum.solidproject.org/t/solid-indexer-assistant/10323/5)
+- [Install](INSTALL.md)
 
 - lancement d'un serveur Solid Community Serveur servant de base de connaissance où sont stockées les données.
+- https://communitysolidserver.github.io/CommunitySolidServer/latest/usage/starting-server/
 - https://communitysolidserver.github.io/CommunitySolidServer/latest/
 - https://solidlab.be/community-solid-server/
 
@@ -215,3 +217,9 @@ test_function_calling_model.py
 - not only content predicat but all predicats and links to other resources
 - add reranking tools for better results
 - [] autoinitialisation from local and/or dist Solid Resources
+- [ ] build tests
+
+# python tests
+
+- https://zestedesavoir.com/tutoriels/2514/un-zeste-de-python/10-annexes/4-tests/
+- https://qkzk.xyz/docs/nsi/cours_premiere/programmation/tester/

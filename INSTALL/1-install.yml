@@ -1,0 +1,30 @@
+---
+- name: Solid-indexer install
+  hosts: localhost
+  gather_facts: False
+  # remote_user: root
+
+  vars:
+    data_folder: $HOME/.solid-indexer
+
+  tasks:
+    - name: create system's directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        # owner: root
+        # group: root
+        mode: 0775
+      become: true
+      loop:
+        - /opt/solid-indexer
+
+    - name: create user's directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        # owner: root
+        # group: root
+        mode: 0775
+      loop:
+        - "{{ data_folder }}"
