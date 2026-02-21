@@ -32,7 +32,7 @@ CONFIG={
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 # https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
     mode='a',
@@ -78,7 +78,7 @@ with open(CONFIG['tools_definition']) as f:
 system_prompt = f"""Tu es un assistant personnel qui gère des notes sur un pod Solid.
 Tu as accès à des fonctions pour créer, modifier, supprimer et lister des notes.
 Le container de base est : {CONFIG['base_container']}
-Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note'.
+Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note' en déterminant une url de classement pertinente.
 N'écris pas de longs discours : utilise les fonctions pour agir directement.
 Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
 Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
@@ -100,7 +100,7 @@ logger.debug("_________________________________NEW SESSION______________________
 def call_function(name, args):
     try: 
         if name == "create_note":
-            uri = store.create_note(args["title"], args["content"], tags=args.get("tags", ""))
+            uri = store.create_note(args['uri'],args["title"], args["content"], tags=args.get("tags", ""))
             return f"Note créée : {uri}"
         elif name == "read_note":
             content = store.read_note(args["uri"])

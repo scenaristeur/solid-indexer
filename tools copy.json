@@ -7,10 +7,6 @@
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "uri": {
-                        "type": "string",
-                        "description": "URI de la note à créer"
-                    },
                     "title": {
                         "type": "string",
                         "description": "Titre de la note (slug)"

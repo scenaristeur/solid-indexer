@@ -199,7 +199,7 @@ test_function_calling_model.py
 
 # TODO
 
-- ansible playbook Installer / docker
+- ansible playbook Installer / docker -> [INSTALL.md](INSTALL.md)
 - Resources versioning
 - Subfolders
 - Multipods indexer / agent :
@@ -209,6 +209,7 @@ test_function_calling_model.py
   - IPFS
   - Supabse
   - GunDB...
+  - Grist
 - agregate multiple tools in a folder / local dist resources
 - manage context length and subdivisions, fast and archives memories -> automemorize when context overflow or on important things, profiles, like memGPT/letta or memU
 - store conversation history on pod

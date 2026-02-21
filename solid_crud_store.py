@@ -64,7 +64,7 @@ class SolidCRUDStore:
         elif resp.status_code != 200:
             logger.warning(f"HEAD sur {container_uri} a retourné {resp.status_code}")
 
-    def create_note(self, name, content, **extra):
+    def create_note(self, uri, name, content, **extra):
         """
         Crée une note dans le conteneur de base.
         name: slug (ex: "ma-note")
@@ -74,7 +74,7 @@ class SolidCRUDStore:
         """
         self._ensure_container(self.base_container)
 
-        note_uri = urljoin(self.base_container, name + '.ttl')
+        note_uri = urljoin(uri or self.base_container, name + '.ttl')
 
         g = Graph()
         g.add((URIRef(note_uri), RDF.type, EX.Note))
