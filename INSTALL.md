@@ -29,5 +29,10 @@ ansible-playbook ./INSTALL/1-install.yml --ask-become-pass -v
 # Start and enjoy !
 
 ```
-./start.sh
+cd /opt/solid-indexer
+. .venv/bin/activate
+./assistant.sh
+
 ```
+
+<!-- ./start.sh -->

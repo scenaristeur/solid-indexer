@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-DATA_FOLDER=$HOME/.solid-indexer
-ENV_FILE=${DATA_FOLDER}/.env
+ROOT_FOLDER=$HOME/.solid-indexer
+DATA_FOLDER=$ROOT_FOLDER/data
+ENV_FILE=${ROOT_FOLDER}/.env
 
 echo "Starting Solid community Server in another terminal window (if not see INSTALL.md)"
 # community-solid-server -c @css:config/file.json -f ${DATA_FOLDER}
 # run command in another terminal https://askubuntu.com/questions/484993/run-command-on-anothernew-terminal-window
-# gnome-terminal -- sh -c "bash -c \"community-solid-server -c @css:config/file.json -f ${DATA_FOLDER}; exec bash\""
+gnome-terminal -- sh -c "bash -c \"community-solid-server -c @css:config/file.json -f ${DATA_FOLDER}; exec bash\""
 
 
 echo "Solid community Server is running in another terminal window"

@@ -3,16 +3,15 @@
   hosts: localhost
   gather_facts: False
   # remote_user: root
-
-  vars:
-    data_folder: $HOME/.solid-indexer
+  vars_files:
+    - ./vars/vars.yml
 
   tasks:
-    - name: create system's directories
+    - name: create system's directories for "{{ current_user}}"
       file:
         path: "{{ item }}"
         state: directory
-        # owner: root
+        owner: "{{ current_user}}"
         # group: root
         mode: 0775
       become: true
@@ -23,17 +22,29 @@
       file:
         path: "{{ item }}"
         state: directory
-        # owner: root
+        # owner: "{{ current_user}}"
         # group: root
         mode: 0775
       loop:
         - "{{ data_folder }}"
 
-    - name: Create "{{data_folder}}/.env"
+    - name: Create "{{root_folder}}/.env"
       ansible.builtin.template:
         src: ./templates/.env.j2
-        dest: "{{data_folder}}/.env"
+        dest: "{{root_folder}}/.env"
         force: no
         # owner: bin
         # group: wheel
         # mode: '0644'
+
+    - name: Checkout a github repo and use refspec to fetch all pull requests
+      ansible.builtin.git:
+        repo: "https://github.com/scenaristeur/solid-indexer.git"
+        dest: /opt/solid-indexer
+
+    - name: Install requirements (might take a while)
+      pip:
+        requirements: /opt/solid-indexer/requirements.txt
+        virtualenv: /opt/solid-indexer/.venv
+        virtualenv_python: python3.10
+      # verbosity: 0

@@ -1,0 +1,3 @@
+root_folder: $HOME/.solid-indexer
+data_folder: "{{root_folder}}/data"
+current_user: "{{ lookup('env','USER')}}"

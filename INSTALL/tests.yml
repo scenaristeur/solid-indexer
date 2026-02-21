@@ -1,0 +1,27 @@
+---
+- name: Solid-indexer tests
+  hosts: localhost
+  gather_facts: False
+  # remote_user: root
+  vars_files:
+    - ./vars/vars.yml
+  vars:
+    verbosity: 3
+
+  tasks:
+    - name: Debug
+      debug:
+        var: root_folder
+        verbosity: 2
+    - name: Debug v1
+      debug:
+        var: root_folder
+        verbosity: 1
+    - name: Debug v2
+      debug:
+        var: root_folder
+        verbosity: 2
+    - name: DEbug v3
+      debug:
+        var: root_folder
+        verbosity: 3
