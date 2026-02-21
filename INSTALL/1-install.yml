@@ -28,3 +28,12 @@
         mode: 0775
       loop:
         - "{{ data_folder }}"
+
+    - name: Create "{{data_folder}}/.env"
+      ansible.builtin.template:
+        src: ./templates/.env.j2
+        dest: "{{data_folder}}/.env"
+        force: no
+        # owner: bin
+        # group: wheel
+        # mode: '0644'
