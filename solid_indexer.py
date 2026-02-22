@@ -253,8 +253,7 @@ class SolidIndexer:
             "mime_type": mime_type,
             "etag": headers.get('etag', ''),
             "last_modified": headers.get('last-modified', ''),
-            "type": "text",
-            "relations": json.dumps([str(p) for p in objects])  # ou une liste limitée
+            "type": "text"
         }
         # Ajouter d'autres métadonnées si disponibles (auteur via Link? À implémenter plus tard)
 

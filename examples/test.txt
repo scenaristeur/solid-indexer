@@ -1,3 +1,7 @@
  cree une note nommé tresor2, avec comme bijoux: bague, collier, comme argent : 100 ecus et 3 Euros, et alimentation : 5 fuits, dont 3 bananes et un pain de deux
 
  crée un note ile avec les propriétés intéressantes pour une ile aux trésor
+
+en repartant de l'exemple ile_aux_tresors.ttl créé 3 ilots de connaissances à explorer dans le dossier aventure/ilots : un sur le thème du langage Python, un sur la résilience et l'autosuffisance, et un sur le projet Solid de Tim Berners Lee. Avec des parcours de découverte pour que les explorateurs acquiert les connaissances durant les explorations de l'ilôt
+
+en repartant de l'exemple ile_aux_tresors.ttl créé 3 ilots de connaissances à explorer dans les dossiers appropriés : un sur le thème de la physique quantique, un sur la creation de musique sur Ableton Live, et un sur la création de paroles de chanson. Avec des parcours de découverte pour que les explorateurs acquiert les connaissances durant les explorations de l'ilôt. Combine les deux avec un quatrième ilot "créer un album sur Ableton Live.

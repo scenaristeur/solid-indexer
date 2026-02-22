@@ -1,0 +1,128 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ns1: <http://example.org/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://localhost:3000/david/notes/ile_aux_tresors.ttl> a ns1:Note ;
+    ns1:content """@prefix : <http://example.org/ns#> .
+@prefix schema: <http://schema.org/> .
+
+:IleAuxTresors 
+    a schema:Place ;
+    schema:name "Île aux Trésors" ;
+    schema:description "Une île mythique idéale pour cacher ou découvrir des trésors cachés. Voici quelques propriétés intéressantes pour une telle île :" ;
+    schema:image "https://via.placeholder.com/300" ;
+    schema:geo "Carte générique à placer ici (ex: coordonnées fictives : 12.3456, -78.9012)" ;
+    schema:locationType "île" ;
+
+    # GÉOGRAPHIE
+    schema:hasPart _:Géographie ;
+
+    _:Géographie 
+        a schema:PlaceFeature ;
+        schema:description "Topographie variée : montagnes, forêts denses, plages secrètes, grottes, et lagons cachés." ;
+
+
+    # ACCÈS ET SECRÈTE
+    schema:hasPart _:Accès ;
+
+    _:Accès 
+        a schema:AccessService ;
+        schema:description "Accès difficile et stratégique pour préserver la discrétion :
+            • Passage maritime étroit connu seulement des initiés
+            • Plage isolée avec un système de marées particulier
+            • Abris naturels (grottes, falaises) pour les navires
+            • Illuminations ou repères (étoiles, fûts flottants) pour les navigateurs expérimentés."
+
+
+    # BIOLOGIE ET FAUNE
+    schema:hasPart _:Faune ;
+
+    _:Faune 
+        a schema:BiologicalFeature ;
+        schema:description "Écosystème riche et adaptatif :
+            • Plantes toxiques ou hallucinogènes (pour dissuader les intrus)
+            • Animaux nocturnes ou discrets (ex : chauves-souris, singes, iguanes)
+            • Sources d’eau douce cachées dans la jungle
+            • Coraux et récifs coralliens protégés (zone interdite aux pilleurs)
+            • Fruits comestibles ou médicaux (pour les survivants d’épave)."
+
+
+    # CULTURE ET LÉGENDES
+    schema:hasPart _:Légendes ;
+
+    _:Légendes 
+        a schema:CreativeWork ;
+        schema:description "Patrimoine oral et récits historiques:
+            • Légendes locales sur des naufrages et disparitions mystérieuses
+            • Gravures ou inscriptions anciennes dans les grottes (langues oubliées ou symboles)
+            • Rituels ou tabous liés à l’île (ex : interdit d’emporter des coquillages blancs)
+            • Objets mystiques associés aux explorateurs disparus (boule de cristal, carte des vents)."
+
+
+    # DÉFENSE NATURELLE
+    schema:hasPart _:Défense ;
+
+    _:Défense 
+        a schema:DefensiveStructure ;
+        schema:description "Mécanismes naturels ou artificiels pour protéger le trésor :
+            • Chutes d’eau ou rapides dangereux autour des zones clés
+            • Sol boueux ou glissant près des tombes ou coffres
+            • Pièges naturels (ex : termitières géantes, arbres emmêlés)
+            • Gardiens symboliques (statues, sculptures effrayantes)
+            • Codes ou énigmes gravées sur des pierres."
+
+
+    # TRÉSORS
+    schema:hasPart _:Trésors ;
+
+    _:Trésors 
+        a schema:Intangible ;
+        schema:description "Types de trésors possibles :
+            • Objets historiques (épée légendaire, couronne royale, bijoux familiaux)
+            • Richesses naturelles (perles rares, épices exotiques, pierres précieuses)
+            • Savoirs ou artefacts anciens (livres enluminés, cartes étoilées, technologies oubliées)
+            • Trésors intangibles (recettes secrètes, proverbes, rituels de guérison)
+            • Trésors émotionnels (lettres d’amour, testament d’un explorateur, journal personnel)."
+
+
+    # SOCIÉTÉ HYPOTHÉTIQUE
+    schema:hasPart _:Société ;
+
+    _:Société 
+        a schema:Organization ;
+        schema:description "Gouvernance et structure d’une communauté éventuelle:
+            • Chef ou guide respecté (héritier d’une dynastie de pirates)
+            • Rôles définis (gardiens, navigateurs, soigneurs, artisans)
+            • Lois coutumières (ex : partage des richesses, interdiction de trahir)
+            • Symbole de reconnaissance (tatouages, objets portés en signe de loyauté)
+            • Fêtes ou cérémonies (ex : solstice d’automne pour honorer les disparus)."
+
+
+    # AMENAGEMENTS HUMAINS
+    schema:hasPart _:Aménagements ;
+
+    _:Aménagements 
+        a schema:Place ;
+        schema:description "Infrastructures discrètes et fonctionnelles :
+            • Abris troglodytes ou maisons blendées dans la végétation
+            • Digue ou jetée secrète pour les petits bateaux
+            • Puits ou citernes pour collecter l’eau de pluie
+            • Fours à pain souterrains pour cuisiner sans fumée
+            • Système de signaux (fumée, mirrors, horloges à eau)."
+
+    # MÉTHODES DE DÉCOUVERTE
+    schema:hasPart _:Méthodes ;
+
+    _:Méthodes 
+        a schema:HowTo ;
+        schema:description "Indices pour trouver l’île ou le trésor :
+            • Carte à double sens (ex : miroir ou encre invisible)
+            • Enigmes mathématiques ou rimes anciennes
+            • Horaires astronomiques (ex : lever de l’étoile Polaire)
+            • Objets à rassembler (ex : coquillage, plume, pièce ancienne)
+            • Paroles de passe ou chants traditionnels." ;
+    schema:keywords "île, trésor, géographie, culture, légendes, défense, faune, aménagement, méthode de découverte"
+;""" ;
+    ns1:tags "géographie, mystère, trésor, légende, île, survie, exploration" ;
+    dcterms:created "2026-02-21T16:51:17.174895+00:00"^^xsd:dateTime .
+

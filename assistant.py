@@ -4,6 +4,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import json
 from openai import OpenAI
+import re
 
 from solid_auth import SolidAuthenticatedSession
 from solid_crud_store import SolidCRUDStore
@@ -21,7 +22,7 @@ CONFIG={
     "log_file": 'logs/assistant_solid_indexer.log',
     "collection_name":"mon_pod",
     "persist_directory":"./chroma_storage",
-    "base_container":"http://localhost:3000/david/notes/",
+    "base_container":"http://localhost:3000/david/",
     "tools_definition": 'tools.json',
     "assistant_name": "Assistant",
     "premier_message": "Assistant prêt. Tapez votre question (ou 'quit' pour quitter), 'commande [params]' pour les commandes internes (cd, rm, ls, mkdir...), '/commande [params]' pour les commandes llm"
@@ -32,7 +33,7 @@ current_path = CONFIG['base_container']
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 # https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
     mode='a',
@@ -61,6 +62,7 @@ session = SolidAuthenticatedSession(
 indexer = SolidIndexer(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
 rag = SolidRAG(collection_name=CONFIG['collection_name'], persist_directory=CONFIG['persist_directory'])
 
+print ("++++++++++++++++++++WEBID", session.webid)
 store = SolidCRUDStore(session, base_container=CONFIG['base_container'], webid=session.webid)
 # Client OpenAI
 openai_client = OpenAI(
@@ -83,15 +85,16 @@ N'écris pas de longs discours : utilise les fonctions pour agir directement.
 Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
 Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
 Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
+Si tu dois utiliser des tools_calls utilise la fonctionnalité tool_calls, ne les mets JAMAIS dans message.content.
 """
 messages = [{"role": "system", "content": system_prompt}]
 
 
 # MAIN
 
-logger.debug(f"[CONFIG] {json.dumps(CONFIG, indent=4)}")
-logger.debug(f"[TOOLS] {json.dumps(tools, indent=4)}")
-logger.debug(f"[SYSTEM_PROMPT] {json.dumps(system_prompt, indent=4)}")
+# logger.debug(f"[CONFIG] {json.dumps(CONFIG, indent=4)}")
+# logger.debug(f"[TOOLS] {json.dumps(tools, indent=4)}")
+# logger.debug(f"[SYSTEM_PROMPT] {json.dumps(system_prompt, indent=4)}")
 logger.debug("_________________________________NEW SESSION__________________________")
 
 
@@ -139,6 +142,85 @@ def call_function(name, args):
         logger.error("Une erreur est survenue dans call_function", exc_info=True)
         return True, tool_calls, e
 
+def parse_tool_call(text: str):
+    """
+    Retourne une liste de tuples (tool_name, arguments_dict).
+    """
+    # 1. Vérifier le préfixe
+    if not text.startswith("[TOOL_CALLS]"):
+        raise ValueError("Texte ne commence pas par [TOOL_CALLS]")
+
+    # 2. Séparer les appels d'outils
+    tool_calls = text.split("[TOOL_CALLS]")[1:]
+
+    results = []
+    for tool_call in tool_calls:
+        # 3. Trouver le nom de l'outil et le JSON
+        tool_name_match = re.search(r'^(\w+)', tool_call)
+        if not tool_name_match:
+            raise ValueError("Impossible de trouver le nom de l'outil")
+
+        tool_name = tool_name_match.group(1)
+
+        # 4. Extraire le JSON en trouvant les accolades
+        json_start = tool_call.find('{')
+        json_end = tool_call.rfind('}') + 1
+        if json_start == -1 or json_end == -1:
+            raise ValueError("Impossible de trouver le JSON")
+
+        json_part = tool_call[json_start:json_end]
+
+        # 5. Nettoyer le JSON (dé‑échapper les antislashs)
+        json_clean = json_part.encode('utf-8').decode('unicode_escape')
+
+        logger.debug(f"TOOL_NAME: {tool_name}")
+        logger.debug(f"JSON_PART: {json_part}")
+
+        # 6. Charger le JSON
+        try:
+            args = json.loads(json_clean)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"JSON mal formé : {e}")
+
+        results.append((tool_name, args))
+
+    return results
+    """
+    Retourne une liste de tuples (tool_name, arguments_dict).
+    """
+    # 1. Vérifier le préfixe
+    if not text.startswith("[TOOL_CALLS]"):
+        raise ValueError("Texte ne commence pas par [TOOL_CALLS]")
+
+    # 2. Séparer les appels d'outils
+    tool_calls = text.split("[TOOL_CALLS]")[1:]
+
+    results = []
+    for tool_call in tool_calls:
+        # 3. Séparer le nom de l'outil et le JSON
+        match = re.match(r"(\w+)(\{.*)", tool_call, re.DOTALL)
+        if not match:
+            raise ValueError("Impossible d’isoler le nom de l’outil et le JSON")
+
+        tool_name = match.group(1)          # ex. "create_note"
+        json_part = match.group(2)          # tout le texte JSON (peut être incomplet)
+
+        # 4. Nettoyer le JSON (dé‑échapper les antislashs)
+        json_clean = json_part.encode('utf-8').decode('unicode_escape')
+
+        logger.debug(f"TOOL_NAME: {tool_name}")
+        logger.debug(f"JSON_PART: {json_part}")
+
+        # 5. Charger le JSON
+        try:
+            args = json.loads(json_clean)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"JSON mal formé : {e}")
+
+        results.append((tool_name, args))
+
+    return results
+
 def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
     logger.debug(f"########################### START NEW CALL_LLM with tool_calls already done = { tool_calls}")
@@ -151,9 +233,9 @@ def call_llm(messages, tool_calls):
             tools=tools,
             tool_choice="auto",  # Laissez le modèle décider
         )
-        logger.debug(f"******* RESPONSE\n{response}\n**********\n")
+        logger.debug(f"******* RESPONSE\n{response.choices[0]}\n**********\n")
         message = response.choices[0].message
-        logger.debug(f"********** RESPONSE MESSAGE\n{message}\n**********\n")
+        # logger.debug(f"\n********** RESPONSE MESSAGE\n{message}\n**********\n")
 
         if message.tool_calls:
             logger.debug(f"******* message.tool_calls True")
@@ -163,7 +245,6 @@ def call_llm(messages, tool_calls):
             tool_name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
             logger.debug(f"Appel fonction {tool_name} avec args {arguments}")
-            logger.info(f"Appel fonction {tool_name} avec args {arguments[:500]}")
             
             result = call_function(tool_name, arguments)
             logger.debug(f"********** TOOL_CALL RESULT\n{result}\n**********\n")
@@ -177,6 +258,12 @@ def call_llm(messages, tool_calls):
             })
             logger.debug(f"******* MESSAGES AFTER TOOL_CALL\n{messages}\n**********\n")
             return False, tool_calls, message
+        elif response.choices[0].finish_reason=='stop' and message.content.startswith("[TOOL_CALLS]"):
+            # message.content[len("[TOOL_CALLS]"):]
+            # calls = json.loads()
+            logger.info(f"_____________ TOOL_CALLS A GERER: \n{response.choices[0]}\n__________\n")
+            results = parse_tool_call(message.content)
+            logger.debug(f"******* TOOL_CALLS RESULTS \n{ json.dumps(tools, indent=4)}\n**********\n")
         else:
             # Réponse directe
             logger.debug(f"******* REPONSE DIRECTE message.tool_calls False")
@@ -216,7 +303,7 @@ while True:
         done = False
         while done is not True and tool_calls < CONFIG['tool_calls_limit']:
             result = call_llm(messages= messages, tool_calls=tool_calls)
-            logger.debug(f"CALL_LLM_RESULT with done boolean, tool_calls counter and assistant reply: {result}")
+            logger.debug(f"CALL_LLM_RESULT with done {done}, tool_calls {tool_calls} and assistant reply: {result}")
             done, tool_calls, message = result
             logger.debug(f"DONE: {done}")
             logger.debug(f"TOOL_CALLS_AFTER: {tool_calls}")

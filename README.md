@@ -50,6 +50,10 @@ python install -r requirements.txt
 
 # utilisation
 
+## index the notes
+
+just ask the model : 'index'
+
 - avec llm (OPENAI_API_KEY décommenté dans .env)
 
 ```

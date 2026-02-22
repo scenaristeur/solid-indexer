@@ -19,6 +19,7 @@ class SolidCRUDStore:
         logger.info(f"CRUD Store initialisé avec base: {self.base_container}")
 
     def _set_acl(self, uri):
+        print("session webid : ", self.webid)
         # Ne pas enlever le slash final : l'ACL d'un conteneur doit être uri/.acl
         acl_uri = uri + '.acl'
         acl_template = """@prefix : <#>.
@@ -51,23 +52,53 @@ class SolidCRUDStore:
             return (f"❌ Échec création ACL pour {uri}: {resp.status_code}")
 
     def _ensure_container(self, container_uri):
-        resp = self.session.request('HEAD', container_uri)
-        if resp.status_code == 404:
-            logger.info(f"Création du conteneur {container_uri}")
-            resp = self.session.request('PUT', container_uri,
-                headers={'Content-Type': 'text/turtle',
-                         'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
-            if resp.status_code in (200, 201):
-                logger.info(f"✅ Conteneur {container_uri} créé")
-                acl_result = self._set_acl(container_uri)
-                time.sleep(1)  # laisser l'ACL s'appliquer
-                return (f"✅ Conteneur {container_uri} créé, {acl_result}")
-            else:
-                logger.error(f"❌ Échec création conteneur {container_uri}: {resp.status_code}")
-                return (f"❌ Échec création conteneur {container_uri}: {resp.status_code}")
-        elif resp.status_code != 200:
-            logger.warning(f"HEAD sur {container_uri} a retourné {resp.status_code}")
-            return (f"HEAD sur {container_uri} a retourné {resp.status_code}")
+        """
+        Ensure that the container exists and create it if it doesn't.
+        Also ensure that all necessary subdirectories and .acl files are created.
+        """
+        # Extract the base container and the subdirectories
+        base_container = self.base_container
+        # print(container_uri)
+        subdirectories = container_uri[len(base_container):].split('/')
+
+        # print("################",subdirectories)
+        # Start with the base container
+        current_uri = base_container
+
+        # Create each subdirectory and .acl file
+        for subdir in subdirectories:
+            if not subdir:
+                continue
+
+            current_uri = f"{current_uri}{subdir}/"
+
+            # Check if the container exists
+
+                # Create the container
+                # self.create_container(current_uri)
+            resp = self.session.request('HEAD', current_uri)
+            if resp.status_code == 404:
+                    logger.info(f"Création du conteneur {current_uri}")
+                    resp = self.session.request('PUT', current_uri,
+                    headers={'Content-Type': 'text/turtle',
+                            'Link': '<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"'})
+                    if resp.status_code in (200, 201):
+                            logger.info(f"✅ Conteneur {current_uri} créé")
+                            acl_result = self._set_acl(current_uri)
+                            time.sleep(1)  # laisser l'ACL s'appliquer
+                    else:
+                            logger.error(f"❌ Échec création conteneur {current_uri}: {resp.status_code}")
+                            return (f"❌ Échec création conteneur {current_uri}: {resp.status_code}")
+            elif resp.status_code != 200:
+                    logger.warning(f"HEAD sur {current_uri} a retourné {resp.status_code}")
+                    return (f"HEAD sur {current_uri} a retourné {resp.status_code}")
+
+            # Ensure the .acl file exists
+            acl_uri = f"{current_uri}.acl"
+            resp_acl = self.session.request('HEAD', current_uri)
+            if resp_acl.status_code == 404:
+                self.create_acl(acl_uri)
+        return (f"✅ Conteneur {container_uri} créé avec succès")
 
     def create_note(self, uri, name, content, predicates=None, **extra):
         """
@@ -78,7 +109,8 @@ class SolidCRUDStore:
         extra: paires clé-valeur pour métadonnées supplémentaires (ex: tags="tag1,tag2")
         Retourne l'URI de la note.
         """
-        container_result = self._ensure_container(uri or self.base_container)
+        container_uri=uri[:uri.rfind('/')]
+        container_result = self._ensure_container(container_uri)
 
         note_uri = urljoin(uri or self.base_container, name + '.ttl')
 
