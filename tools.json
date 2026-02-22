@@ -17,7 +17,7 @@
                     },
                     "content": {
                         "type": "string",
-                        "description": "Contenu au format turtle de la note"
+                        "description": "Contenu au format turtle valide de la note"
                     },
                     "tags": {
                         "type": "string",

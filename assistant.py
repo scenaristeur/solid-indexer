@@ -86,6 +86,7 @@ Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create
 Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
 Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
 Si tu dois utiliser des tools_calls utilise la fonctionnalité tool_calls, ne les mets JAMAIS dans message.content.
+lorsque tu dois donner du contenu au format turtle (ttl) donne juste le contenu prêt à être inséré comme resource
 """
 messages = [{"role": "system", "content": system_prompt}]
 
@@ -152,7 +153,6 @@ def parse_tool_call(text: str):
 
     # 2. Séparer les appels d'outils
     tool_calls = text.split("[TOOL_CALLS]")[1:]
-
     results = []
     for tool_call in tool_calls:
         # 3. Trouver le nom de l'outil et le JSON
@@ -165,59 +165,30 @@ def parse_tool_call(text: str):
         # 4. Extraire le JSON en trouvant les accolades
         json_start = tool_call.find('{')
         json_end = tool_call.rfind('}') + 1
+
         if json_start == -1 or json_end == -1:
             raise ValueError("Impossible de trouver le JSON")
 
         json_part = tool_call[json_start:json_end]
 
+        logger.info(f"JSONPART\n{json_part}")
         # 5. Nettoyer le JSON (dé‑échapper les antislashs)
-        json_clean = json_part.encode('utf-8').decode('unicode_escape')
-
-        logger.debug(f"TOOL_NAME: {tool_name}")
-        logger.debug(f"JSON_PART: {json_part}")
-
-        # 6. Charger le JSON
         try:
+            json_clean = json_part.encode('utf-8')#.decode('unicode_escape')
+            logger.debug(f"TOOL_NAME: {tool_name}")
+            logger.debug(f"JSON_PART: {json_part}")
+            logger.debug(f"JSON_CLEAN: {json_clean}")
+
+            # 6. Charger le JSON
             args = json.loads(json_clean)
+            results.append((tool_name, args))
         except json.JSONDecodeError as e:
+            logger.error(f"JSON mal formé : {e}")
+            logger.error(f"JSON_CLEAN: {json_clean}")
             raise ValueError(f"JSON mal formé : {e}")
-
-        results.append((tool_name, args))
-
-    return results
-    """
-    Retourne une liste de tuples (tool_name, arguments_dict).
-    """
-    # 1. Vérifier le préfixe
-    if not text.startswith("[TOOL_CALLS]"):
-        raise ValueError("Texte ne commence pas par [TOOL_CALLS]")
-
-    # 2. Séparer les appels d'outils
-    tool_calls = text.split("[TOOL_CALLS]")[1:]
-
-    results = []
-    for tool_call in tool_calls:
-        # 3. Séparer le nom de l'outil et le JSON
-        match = re.match(r"(\w+)(\{.*)", tool_call, re.DOTALL)
-        if not match:
-            raise ValueError("Impossible d’isoler le nom de l’outil et le JSON")
-
-        tool_name = match.group(1)          # ex. "create_note"
-        json_part = match.group(2)          # tout le texte JSON (peut être incomplet)
-
-        # 4. Nettoyer le JSON (dé‑échapper les antislashs)
-        json_clean = json_part.encode('utf-8').decode('unicode_escape')
-
-        logger.debug(f"TOOL_NAME: {tool_name}")
-        logger.debug(f"JSON_PART: {json_part}")
-
-        # 5. Charger le JSON
-        try:
-            args = json.loads(json_clean)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"JSON mal formé : {e}")
-
-        results.append((tool_name, args))
+        except Exception as e:
+            logger.error(f"Erreur inattendue : {e}")
+            raise ValueError(f"Erreur inattendue : {e}")
 
     return results
 
@@ -244,7 +215,7 @@ def call_llm(messages, tool_calls):
             tool_call = message.tool_calls[0]
             tool_name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
-            logger.debug(f"Appel fonction {tool_name} avec args {arguments}")
+            logger.info(f"Appel fonction {tool_name} avec args {arguments}")
             
             result = call_function(tool_name, arguments)
             logger.debug(f"********** TOOL_CALL RESULT\n{result}\n**********\n")

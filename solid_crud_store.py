@@ -115,16 +115,21 @@ class SolidCRUDStore:
         note_uri = urljoin(uri or self.base_container, name + '.ttl')
 
         g = Graph()
-        g.add((URIRef(note_uri), RDF.type, EX.Note))
-        g.add((URIRef(note_uri), EX.content, Literal(content)))
-        g.add((URIRef(note_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
-                    datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
+        if content.startswith('@prefix'):
+            logger.info(f"CONTENT TO PARSE :  {content}")
+            g = g.parse(data=content, format='n3')
+            logger.info(f"GRAPH :  {graph}")
+        else : 
+            g.add((URIRef(note_uri), RDF.type, EX.Note))
+            g.add((URIRef(note_uri), EX.content, Literal(content)))
+
         if predicates:
             for pred, value in predicates.items():
                 g.add((URIRef(note_uri), URIRef(pred), Literal(value)))
         for k, v in extra.items():
             g.add((URIRef(note_uri), EX[k], Literal(v)))
-
+        g.add((URIRef(note_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
+                datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
         data = g.serialize(format='turtle')
         resp = self.session.request('PUT', note_uri, data=data,
                                     headers={'Content-Type': 'text/turtle'})
@@ -139,7 +144,11 @@ class SolidCRUDStore:
     def update_note(self, uri, new_content, predicates=None, **extra):
         g = Graph()
         g.add((URIRef(uri), RDF.type, EX.Note))
-        g.add((URIRef(uri), EX.content, Literal(new_content)))
+        if content.startswith('@prefix'):
+            g = g.parse(data=content, format='n3')
+        else:
+            g.add((URIRef(uri), RDF.type, EX.Note))
+            g.add((URIRef(uri), EX.content, Literal(content)))
         g.add((URIRef(uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z',
                     datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
         if predicates:
