@@ -2,22 +2,22 @@
     {
         "type": "function",
         "function": {
-            "name": "create_note",
-            "description": "Crée une nouvelle note avec un titre et un contenu",
+            "name": "create_resource",
+            "description": "Crée une nouvelle resource avec un titre et un contenu au format jsonld",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "URI de la note à créer"
+                        "description": "URI de la resource à créer avec l'extension .jsonld"
                     },
                     "title": {
                         "type": "string",
-                        "description": "Titre de la note (slug)"
+                        "description": "Titre de la resource (slug)"
                     },
                     "content": {
-                        "type": "string",
-                        "description": "Contenu au format turtle valide de la note"
+                        "type": "object",
+                        "description": "Contenu au format jsonld valide de la resource"
                     },
                     "tags": {
                         "type": "string",
@@ -35,14 +35,14 @@
     {
         "type": "function",
         "function": {
-            "name": "read_note",
-            "description": "Lit le contenu d'une note existante",
+            "name": "read_resource",
+            "description": "Lit le contenu d'une resource existante",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "URI de la note à lire"
+                        "description": "URI de la resource à lire"
                     }
                 },
                 "required": [
@@ -54,18 +54,18 @@
     {
         "type": "function",
         "function": {
-            "name": "update_note",
-            "description": "Met à jour le contenu d'une note existante",
+            "name": "update_resource",
+            "description": "Met à jour le contenu d'une resource existante au format jsonld",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "URI de la note à modifier"
+                        "description": "URI de la resource à modifier avec l'extension .jsonld"
                     },
                     "new_content": {
                         "type": "string",
-                        "description": "Nouveau contenu au format turtle"
+                        "description": "Nouveau contenu au format jsonld"
                     }
                 },
                 "required": [
@@ -78,14 +78,14 @@
     {
         "type": "function",
         "function": {
-            "name": "delete_note",
-            "description": "Supprime (archive) une note",
+            "name": "delete_resource",
+            "description": "Supprime (archive) une resource",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "URI de la note à supprimer"
+                        "description": "URI de la resource à supprimer"
                     }
                 },
                 "required": [
@@ -97,8 +97,8 @@
     {
         "type": "function",
         "function": {
-            "name": "list_notes",
-            "description": "Liste toutes les notes actives",
+            "name": "list_resources",
+            "description": "Liste toutes les resources actives",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -117,7 +117,7 @@
         "type": "function",
         "function": {
             "name": "index",
-            "description": "permet de vectoriser les notes, de les stocker dans le RAG pour une recherche plus efficace",
+            "description": "permet de vectoriser les resources, de les stocker dans le RAG pour une recherche plus efficace",
             "parameters": {
                 "type": "object"
             }
@@ -127,7 +127,7 @@
         "type": "function",
         "function": {
             "name": "retrieve",
-            "description": " rechercher et récupérer dans le RAG les notes pertinentes en fonction de la requête de l'utilisateur",
+            "description": " rechercher et récupérer dans le RAG les resources pertinentes en fonction de la requête de l'utilisateur",
             "parameters": {
                 "type": "object",
                 "properties": {

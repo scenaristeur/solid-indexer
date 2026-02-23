@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python assistant.py
+python main.py

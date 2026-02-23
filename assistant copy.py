@@ -77,16 +77,16 @@ with open(CONFIG['tools_definition']) as f:
     tools = json.load(f)
 
 # PROMPTS
-system_prompt = f"""Tu es un assistant personnel qui gère des notes sur un pod Solid.
-Tu as accès à des fonctions pour créer, modifier, supprimer et lister des notes.
+system_prompt = f"""Tu es un assistant personnel qui gère des resources JSONLD sur un pod Solid.
+Tu as accès à des fonctions pour créer, modifier, supprimer et lister des resources JSONLD.
 Le container de base est : {CONFIG['base_container']}
-Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note' en déterminant une url de classement pertinente.
+Lorsque l'utilisateur te demande de créer une resource, tu DOIS utiliser la fonction 'create_resource' en déterminant une url (current_path/categoris/sous-categorie/.../nom.jsonld de classement pertinente.
 N'écris pas de longs discours : utilise les fonctions pour agir directement.
-Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
-Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
-Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
-Si tu dois utiliser des tools_calls utilise la fonctionnalité tool_calls, ne les mets JAMAIS dans message.content.
-lorsque tu dois donner du contenu au format turtle (ttl) donne juste le contenu prêt à être inséré comme resource
+Par exemple, si l'utilisateur dit "crée une resource sur le projet", appelle create_resource avec un titre et un contenu appropriés.
+Pour rechercher dans le contenu des resources, utilise la fonction retrieve.
+Ne donne pas de conseils sur la façon de créer une resource : crée-la réellement via la fonction.
+Si tu dois utiliser des tools_calls utilise TOUJOURS la fonctionnalité tool_calls, ne les mets JAMAIS dans message.content.
+Lorsque tu dois donner du contenu au format JSONLD (jsonld), pour créer ou mettre à jour une resource donne juste le contenu prêt à être inséré comme resource
 """
 messages = [{"role": "system", "content": system_prompt}]
 
@@ -102,26 +102,26 @@ logger.debug("_________________________________NEW SESSION______________________
 
 def call_function(name, args):
     try:
-        if name == "create_note":
-            uri = store.create_note(args.get('uri', CONFIG['base_container']), args["title"], args["content"], tags=args.get("tags", ""), predicates=args.get("predicates", {}))
-            return f"Note créée : {uri}"
-        elif name == "read_note":
-            content = store.read_note(args["uri"])
+        if name == "create_resource":
+            uri = store.create_resource(args.get('uri', CONFIG['base_container']), args["title"], args["content"], tags=args.get("tags", ""), predicates=args.get("predicates", {}))
+            return f"resource créée : {uri}"
+        elif name == "read_resource":
+            content = store.read_resource(args["uri"])
             return json.dumps(content) if content else "Échec suppression"
-        elif name == "update_note":
-            # adapter si update_note attend new_content et autres paramètres
-            success = store.update_note(args["uri"], args["new_content"], predicates=args.get("predicates", {}))
-            return "Note mise à jour" if success else "Échec mise à jour"
-        elif name == "delete_note":
-            success = store.delete_note(args["uri"])
-            return "Note supprimée" if success else "Échec suppression"
-        elif name == "list_notes":
-            notes = store.list_notes(args["uri"])
-            # notes = store.list_notes(args["uri"])
-            if notes:
-                return "Notes trouvées :\n" + "\n".join(notes)
+        elif name == "update_resource":
+            # adapter si update_resource attend new_content et autres paramètres
+            success = store.update_resource(args["uri"], args["new_content"], predicates=args.get("predicates", {}))
+            return "resource mise à jour" if success else "Échec mise à jour"
+        elif name == "delete_resource":
+            success = store.delete_resource(args["uri"])
+            return "resource supprimée" if success else "Échec suppression"
+        elif name == "list_resources":
+            resources = store.list_resources(args["uri"])
+            # resources = store.list_resources(args["uri"])
+            if resources:
+                return "resources trouvées :\n" + "\n".join(resources)
             else:
-                return "Aucune note trouvée."
+                return "Aucune resource trouvée."
         elif name == "retrieve":
             context = rag.retrieve(args["query"])
 
@@ -134,7 +134,7 @@ def call_function(name, args):
                 return context_text
         elif name == "index":
             success = indexer.run(CONFIG['base_container'])
-            return "Notes indexes" if success else "Échec index"
+            return "resources indexes" if success else "Échec index"
         else:
             return "Fonction inconnue"
     except Exception as e:
@@ -142,6 +142,7 @@ def call_function(name, args):
         # logger.error(f"Erreur call_llm: {e}")
         logger.error("Une erreur est survenue dans call_function", exc_info=True)
         return True, tool_calls, e
+
 
 def parse_tool_call(text: str):
     """
@@ -172,15 +173,49 @@ def parse_tool_call(text: str):
         json_part = tool_call[json_start:json_end]
 
         logger.info(f"JSONPART\n{json_part}")
+        results.append({"tool_name": tool_name, "arguments": json_part})
+        print("RESULTS\n", results)
+    return results 
+
+
+def parse_tool_call1(text: str):
+    """
+    Retourne une liste de tuples (tool_name, arguments_dict).
+    """
+    # 1. Vérifier le préfixe
+    if not text.startswith("[TOOL_CALLS]"):
+        raise ValueError("Texte ne commence pas par [TOOL_CALLS]")
+
+    # 2. Séparer les appels d'outils
+    tool_calls = text.split("[TOOL_CALLS]")[1:]
+    results = []
+    for tool_call in tool_calls:
+        # 3. Trouver le nom de l'outil et le JSON
+        tool_name_match = re.search(r'^(\w+)', tool_call)
+        if not tool_name_match:
+            raise ValueError("Impossible de trouver le nom de l'outil")
+
+        tool_name = tool_name_match.group(1)
+
+        # 4. Extraire le JSON en trouvant les accolades
+        json_start = tool_call.find('{')
+        json_end = tool_call.rfind('}') + 1
+
+        if json_start == -1 or json_end == -1:
+            raise ValueError("Impossible de trouver le JSON")
+
+        json_part = tool_call[json_start:json_end]
+
+        logger.info(f"JSONPART\n{json_part}")
         # 5. Nettoyer le JSON (dé‑échapper les antislashs)
         try:
-            json_clean = json_part.encode('utf-8')#.decode('unicode_escape')
+            json_clean = json_part.encode('utf-8').decode('unicode_escape')
             logger.debug(f"TOOL_NAME: {tool_name}")
             logger.debug(f"JSON_PART: {json_part}")
             logger.debug(f"JSON_CLEAN: {json_clean}")
 
             # 6. Charger le JSON
-            args = json.loads(json_clean)
+            args = json.loads(json_part)
             results.append((tool_name, args))
         except json.JSONDecodeError as e:
             logger.error(f"JSON mal formé : {e}")
@@ -189,7 +224,7 @@ def parse_tool_call(text: str):
         except Exception as e:
             logger.error(f"Erreur inattendue : {e}")
             raise ValueError(f"Erreur inattendue : {e}")
-
+    print(f"RESULTS: \n{ json.dumps(results, indent=4)}\n")
     return results
 
 def call_llm(messages, tool_calls):
@@ -232,9 +267,29 @@ def call_llm(messages, tool_calls):
         elif response.choices[0].finish_reason=='stop' and message.content.startswith("[TOOL_CALLS]"):
             # message.content[len("[TOOL_CALLS]"):]
             # calls = json.loads()
+            results = []
             logger.info(f"_____________ TOOL_CALLS A GERER: \n{response.choices[0]}\n__________\n")
-            results = parse_tool_call(message.content)
-            logger.debug(f"******* TOOL_CALLS RESULTS \n{ json.dumps(tools, indent=4)}\n**********\n")
+            parsings = parse_tool_call(message.content)
+            for parsing in parsings: 
+                print(f"PARSING: {parsing}")
+                logger.info(f"******* TOOL_CALLS PARSING \n{ json.dumps(parsing, indent=4)}\n**********\n")
+                tool_name = parsing['tool_name']
+                arguments = parsing['arguments']
+                logger.info(f"Appel fonction {tool_name} avec args {arguments}")
+            
+                result = call_function(tool_name, arguments)
+                logger.info(f"********** TOOL_CALL RESULT\n{result}\n**********\n")
+            results.append(result)
+                # Ajouter la réponse de la fonction à la conversation
+            messages.append(message)  # le message avec tool_call
+            messages.append({
+            "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_call.function.name,
+                "content": results
+            })
+            logger.info(f"******* MESSAGES AFTER TOOL_CALL\n{messages}\n**********\n")
+            return False, tool_calls, message
         else:
             # Réponse directe
             logger.debug(f"******* REPONSE DIRECTE message.tool_calls False")

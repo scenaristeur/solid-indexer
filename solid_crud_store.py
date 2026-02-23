@@ -100,19 +100,19 @@ class SolidCRUDStore:
                 self.create_acl(acl_uri)
         return (f"✅ Conteneur {container_uri} créé avec succès")
 
-    def create_note(self, uri, name, content, predicates=None, **extra):
+    def create_resource(self, uri, name, content, predicates=None, **extra):
         """
-        Crée une note dans le conteneur de base.
-        name: slug (ex: "ma-note")
-        content: texte de la note
+        Crée une resource dans le conteneur de base.
+        name: slug (ex: "ma-resource")
+        content: texte de la resource
         predicates: dictionnaire de prédicats supplémentaires
         extra: paires clé-valeur pour métadonnées supplémentaires (ex: tags="tag1,tag2")
-        Retourne l'URI de la note.
+        Retourne l'URI de la resource.
         """
         container_uri=uri[:uri.rfind('/')]
         container_result = self._ensure_container(container_uri)
 
-        note_uri = urljoin(uri or self.base_container, name + '.ttl')
+        resource_uri = urljoin(uri or self.base_container, name + '.ttl')
 
         g = Graph()
         if content.startswith('@prefix'):
@@ -120,34 +120,34 @@ class SolidCRUDStore:
             g = g.parse(data=content, format='n3')
             logger.info(f"GRAPH :  {graph}")
         else : 
-            g.add((URIRef(note_uri), RDF.type, EX.Note))
-            g.add((URIRef(note_uri), EX.content, Literal(content)))
+            g.add((URIRef(resource_uri), RDF.type, EX.resource))
+            g.add((URIRef(resource_uri), EX.content, Literal(content)))
 
         if predicates:
             for pred, value in predicates.items():
-                g.add((URIRef(note_uri), URIRef(pred), Literal(value)))
+                g.add((URIRef(resource_uri), URIRef(pred), Literal(value)))
         for k, v in extra.items():
-            g.add((URIRef(note_uri), EX[k], Literal(v)))
-        g.add((URIRef(note_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
+            g.add((URIRef(resource_uri), EX[k], Literal(v)))
+        g.add((URIRef(resource_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
                 datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
         data = g.serialize(format='turtle')
-        resp = self.session.request('PUT', note_uri, data=data,
+        resp = self.session.request('PUT', resource_uri, data=data,
                                     headers={'Content-Type': 'text/turtle'})
         if resp.status_code in (200, 201, 205):
-            logger.info(f"✅ Note créée : {note_uri}")
-            # self._set_acl(note_uri)
-            return note_uri
+            logger.info(f"✅ resource créée : {resource_uri}")
+            # self._set_acl(resource_uri)
+            return resource_uri
         else:
-            logger.error(f"❌ Échec création note {note_uri}: {resp.status_code}")
-            return (f"❌ Échec création note {note_uri}: {resp.status_code}, container creation result : {container_result}")
+            logger.error(f"❌ Échec création resource {resource_uri}: {resp.status_code}")
+            return (f"❌ Échec création resource {resource_uri}: {resp.status_code}, container creation result : {container_result}")
 
-    def update_note(self, uri, new_content, predicates=None, **extra):
+    def update_resource(self, uri, new_content, predicates=None, **extra):
         g = Graph()
-        g.add((URIRef(uri), RDF.type, EX.Note))
+        g.add((URIRef(uri), RDF.type, EX.resource))
         if content.startswith('@prefix'):
             g = g.parse(data=content, format='n3')
         else:
-            g.add((URIRef(uri), RDF.type, EX.Note))
+            g.add((URIRef(uri), RDF.type, EX.resource))
             g.add((URIRef(uri), EX.content, Literal(content)))
         g.add((URIRef(uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z',
                     datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
@@ -160,13 +160,13 @@ class SolidCRUDStore:
         resp = self.session.request('PUT', uri, data=data,
                                     headers={'Content-Type': 'text/turtle'})
         if resp.status_code in (200, 201, 205):
-            logger.info(f"✅ Note mise à jour : {uri}")
+            logger.info(f"✅ resource mise à jour : {uri}")
             return True
         else:
             logger.error(f"❌ Échec mise à jour {uri}: {resp.status_code}")
             return False
 
-    def read_note(self, uri):
+    def read_resource(self, uri):
         resp = self.session.request('GET', uri, headers={'Accept': 'text/turtle'})
         if resp.status_code != 200:
             logger.error(f"Lecture échouée {uri}: {resp.status_code}")
@@ -179,9 +179,9 @@ class SolidCRUDStore:
             result[pred] = val
         return result
 
-    # def update_note(self, uri, new_content, **extra):
+    # def update_resource(self, uri, new_content, **extra):
     #     g = Graph()
-    #     g.add((URIRef(uri), RDF.type, EX.Note))
+    #     g.add((URIRef(uri), RDF.type, EX.resource))
     #     g.add((URIRef(uri), EX.content, Literal(new_content)))
     #     g.add((URIRef(uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z',
     #                 datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
@@ -191,25 +191,25 @@ class SolidCRUDStore:
     #     resp = self.session.request('PUT', uri, data=data,
     #                                 headers={'Content-Type': 'text/turtle'})
     #     if resp.status_code in (200, 201, 205):
-    #         logger.info(f"✅ Note mise à jour : {uri}")
+    #         logger.info(f"✅ resource mise à jour : {uri}")
     #         return True
     #     else:
     #         logger.error(f"❌ Échec mise à jour {uri}: {resp.status_code}")
     #         return False
 
-    def delete_note(self, uri):
+    def delete_resource(self, uri):
         resp = self.session.request('DELETE', uri)
         if resp.status_code == 404:
             logger.info(f"✅ La resource n'existe pas : {uri}")
             return True
         elif resp.status_code in (200, 204, 205):
-            logger.info(f"✅ Note supprimée : {uri}")
+            logger.info(f"✅ resource supprimée : {uri}")
             return True
         else:
             logger.error(f"❌ Échec suppression {uri}: {resp.status_code}")
             return False
 
-    def list_notes(self, uri):
+    def list_resources(self, uri):
         container_uri = uri or self.base_container
         resp = self.session.request('GET', container_uri, headers={'Accept': 'text/turtle'})
         if resp.status_code != 200:
@@ -217,11 +217,11 @@ class SolidCRUDStore:
             return []
         g = rdflib.Graph().parse(data=resp.text, format='turtle', publicID=container_uri)
         ldp = rdflib.Namespace("http://www.w3.org/ns/ldp#")
-        notes = []
+        resources = []
         for member in g.objects(rdflib.URIRef(container_uri), ldp.contains):
             member_uri = str(member)
             if member_uri.endswith('.ttl'):
-                notes.append(member_uri)
+                resources.append(member_uri)
         # Log pour déboguer
-        logger.info(f"Membres trouvés dans {container_uri}: {notes}")
-        return notes
+        logger.info(f"Membres trouvés dans {container_uri}: {resources}")
+        return resources
