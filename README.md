@@ -256,3 +256,7 @@ test_function_calling_model.py
 - https://developers.openai.com/api/docs/guides/tools-skills
 - https://agentskills.io/home
 - https://github.com/agentskills/agentskills/tree/main/skills-ref
+
+# bug
+
+- multiple TOOL_CALLS in centent when multiple things to do : https://github.com/scenaristeur/solid-indexer/issues/1
