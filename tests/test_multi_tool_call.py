@@ -10,6 +10,33 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+CONFIG={
+    "tool_calls_limit": 6,
+    "logger_name": "assistant_core",
+    # "logging_level": logging.INFO,
+    "log_file": 'logs/assistant_solid_indexer.log',
+    "collection_name":"mon_pod",
+    "persist_directory":"./chroma_storage",
+    "base_container":"http://localhost:3000/david/",
+    "tools_definition": 'tools.json',
+    "assistant_name": "Assistant",
+    "premier_message": "Assistant prêt. Tapez votre question (ou 'quit' pour quitter), 'commande [params]' pour les commandes internes (cd, rm, ls, mkdir...), '/commande [params]' pour les commandes llm"
+}
+
+# PROMPTS
+# system_prompt = f"""Tu es un assistant personnel qui gère des notes sur un pod Solid.
+# Tu as accès à des fonctions pour créer, modifier, supprimer et lister des notes.
+# Le container de base est : {CONFIG['base_container']}
+# Lorsque l'utilisateur te demande de créer une note, tu DOIS utiliser la fonction 'create_note' en déterminant une url de classement pertinente.
+# N'écris pas de longs discours : utilise les fonctions pour agir directement.
+# Par exemple, si l'utilisateur dit "crée une note sur le projet", appelle create_note avec un titre et un contenu appropriés.
+# Pour rechercher dans le contenu des notes, utilise la fonction retrieve.
+# Ne donne pas de conseils sur la façon de créer une note : crée-la réellement via la fonction.
+# N'utilise JAMAIS [TOOL_CALLS] dans le contenu de ta réponse, utilise toujours la clé 'tool_calls' du message!
+# """
+# messages = [{"role": "system", "content": system_prompt}]
+messages=[]
+
 # Simuler l'exécution de la fonction
 def get_weather(params):
     print("weather PARAMS", params)
@@ -79,7 +106,7 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 
-chat_model = os.getenv("CHAT_MODEL")
+chat_model = os.getenv("MODEL")
 # Définissez un outil très simple, comme la météo
 tools = [
     {
@@ -151,9 +178,11 @@ tools = [
     },
 ]
 
+# messages = [{"role": "user", "content": "Quel temps fait-il à Paris ?"}]
+messages = [{"role": "user", "content": "créé une note sur le temps à Paris ?"}]
 # messages = [{"role": "user", "content": "Quel temps fait-il à Paris et à Lyon ?"}]
 # messages = [{"role": "user", "content": "créé deux notes : une sur Paris, l'autre sur Python."}]
-messages = [{"role": "user", "content": "créé deux notes : une sur javascript, l'autre sur Python."}]
+# messages.append({"role": "user", "content": "créé deux notes : une sur Lyon avec le musée Confluence, l'autre sur Paris avec la Tour Eiffel."})
 
 
 try:
@@ -204,7 +233,7 @@ try:
 
         # Deuxième appel pour obtenir la réponse finale
         second_response = client.chat.completions.create(
-            model=os.getenv("CHAT_MODEL"),
+            model=os.getenv("MODEL_SMALL"),
             messages=messages
         )
         final_answer = second_response.choices[0].message.content
