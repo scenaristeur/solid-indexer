@@ -111,23 +111,28 @@ class SolidCRUDStore:
         """
         container_uri=uri[:uri.rfind('/')]
         container_result = self._ensure_container(container_uri)
-
+        
         note_uri = urljoin(uri or self.base_container, name + '.ttl')
+        
+        if content.startswith('@prefix'):
+            print("note en ttl", content)
+            resp = self.session.request('PUT', note_uri, data=content,
+                          headers={'Content-Type': 'text/turtle'})
+        else: 
+            g = Graph()
+            g.add((URIRef(note_uri), RDF.type, EX.Note))
+            g.add((URIRef(note_uri), EX.content, Literal(content)))
+            g.add((URIRef(note_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
+                        datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
+            if predicates:
+                for pred, value in predicates.items():
+                    g.add((URIRef(note_uri), URIRef(pred), Literal(value)))
+            for k, v in extra.items():
+                g.add((URIRef(note_uri), EX[k], Literal(v)))
 
-        g = Graph()
-        g.add((URIRef(note_uri), RDF.type, EX.Note))
-        g.add((URIRef(note_uri), EX.content, Literal(content)))
-        g.add((URIRef(note_uri), DCT.created, Literal(datetime.utcnow().isoformat() + 'Z',
-                    datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
-        if predicates:
-            for pred, value in predicates.items():
-                g.add((URIRef(note_uri), URIRef(pred), Literal(value)))
-        for k, v in extra.items():
-            g.add((URIRef(note_uri), EX[k], Literal(v)))
-
-        data = g.serialize(format='turtle')
-        resp = self.session.request('PUT', note_uri, data=data,
-                                    headers={'Content-Type': 'text/turtle'})
+            data = g.serialize(format='turtle')
+            resp = self.session.request('PUT', note_uri, data=data,
+                                        headers={'Content-Type': 'text/turtle'})
         if resp.status_code in (200, 201, 205):
             logger.info(f"✅ Note créée : {note_uri}")
             # self._set_acl(note_uri)
@@ -137,18 +142,22 @@ class SolidCRUDStore:
             return (f"❌ Échec création note {note_uri}: {resp.status_code}, container creation result : {container_result}")
 
     def update_note(self, uri, new_content, predicates=None, **extra):
-        g = Graph()
-        g.add((URIRef(uri), RDF.type, EX.Note))
-        g.add((URIRef(uri), EX.content, Literal(new_content)))
-        g.add((URIRef(uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z',
-                    datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
-        if predicates:
-            for pred, value in predicates.items():
-                g.add((URIRef(uri), URIRef(pred), Literal(value)))
-        for k, v in extra.items():
-            g.add((URIRef(uri), EX[k], Literal(v)))
-        data = g.serialize(format='turtle')
-        resp = self.session.request('PUT', uri, data=data,
+        if new_content.startswith('@prefix'):
+            resp = self.session.request('PUT', uri, data=new_content,
+                          headers={'Content-Type': 'text/turtle'})
+        else: 
+            g = Graph()
+            g.add((URIRef(uri), RDF.type, EX.Note))
+            g.add((URIRef(uri), EX.content, Literal(new_content)))
+            g.add((URIRef(uri), DCT.modified, Literal(datetime.utcnow().isoformat() + 'Z',
+                        datatype=URIRef("http://www.w3.org/2001/XMLSchema#dateTime"))))
+            if predicates:
+                for pred, value in predicates.items():
+                    g.add((URIRef(uri), URIRef(pred), Literal(value)))
+            for k, v in extra.items():
+                g.add((URIRef(uri), EX[k], Literal(v)))
+            data = g.serialize(format='turtle')
+            resp = self.session.request('PUT', uri, data=data,
                                     headers={'Content-Type': 'text/turtle'})
         if resp.status_code in (200, 201, 205):
             logger.info(f"✅ Note mise à jour : {uri}")

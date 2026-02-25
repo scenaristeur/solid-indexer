@@ -173,8 +173,8 @@ def parse_tool_call(text: str):
         # 5. Nettoyer le JSON (dé‑échapper les antislashs)
         json_clean = json_part.encode('utf-8').decode('unicode_escape')
 
-        logger.debug(f"TOOL_NAME: {tool_name}")
-        logger.debug(f"JSON_PART: {json_part}")
+        logger.info(f"TOOL_NAME: {tool_name}")
+        logger.info(f"JSON_PART: {json_part}")
 
         # 6. Charger le JSON
         try:
