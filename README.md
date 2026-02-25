@@ -236,3 +236,23 @@ test_function_calling_model.py
 # TOOLS SCHEMA
 
 - https://apxml.com/courses/building-advanced-llm-agent-tools/chapter-1-llm-agent-tooling-foundations/tool-input-output-schemas
+
+# yaml-ld
+
+- https://w3c.github.io/yaml-ld/
+- https://python-yaml-ld.iolanta.tech/
+- yaml-ld dans enola-dev agents : https://docs.enola.dev/specs/markdown-yamlld-codeblock/#description
+  > We believe the future of AI lies in Knowledge Management Platforms benefiting from the synergy between Large Language Models and structured Knowledge Graphs (KG). Our goal is to further explore the fascinating intersection of these fields, particularly with AI Graph RAG (Retrieval-Augmented Generation). By providing agents with a rich, contextual understanding of “IT Infrastructure (or other) as Linked Data” systems through knowledge graphs, we aim to create more powerful, accurate, and intelligent ⛑️ automation (until singularity).
+
+# MCP
+
+- https://developers.openai.com/api/docs/guides/tools-connectors-mcp/?quickstart-panels=remote-mcp
+- https://github.com/upstash/context7
+
+# mcp or skills ?
+
+- https://github.com/microsoft/playwright-cli
+- https://developers.openai.com/cookbook/examples/skills_in_api/
+- https://developers.openai.com/api/docs/guides/tools-skills
+- https://agentskills.io/home
+- https://github.com/agentskills/agentskills/tree/main/skills-ref
