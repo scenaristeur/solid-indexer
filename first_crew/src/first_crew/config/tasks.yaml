@@ -13,5 +13,6 @@ reporting_task:
     Make sure the report is detailed and contains any and all relevant information.
   expected_output: >
     A fully fledged report with the main topics, each with a full section of information.
+    En français.
     Formatted as markdown without '```'
   agent: reporting_analyst
