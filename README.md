@@ -251,6 +251,7 @@ test_function_calling_model.py
 
 # mcp or skills ?
 
+- https://www.reddit.com/r/programming/comments/1k2z3fc/how_to_build_an_mcp_server_and_client_with/?tl=fr
 - https://github.com/microsoft/playwright-cli
 - https://developers.openai.com/cookbook/examples/skills_in_api/
 - https://developers.openai.com/api/docs/guides/tools-skills
