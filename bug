@@ -1,0 +1,11 @@
+python test_function_calling_model.py 
+✅ Le modèle supporte le function calling !
+Outil appelé : get_weather
+Arguments : {'location': 'Paris, France'}
+PARAMS {'location': 'Paris, France'}
+location Paris
+RESULT 3°C, risque de pluie 70%, vent 30km/h
+❌ Erreur lors de l'appel : Error code: 400 - {'detail': '4 validation errors for ChatCompletionRequest\nmessages.1.assistant.audio\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.function_call\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.refusal\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.annotations\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden 4 validation errors for ChatCompletionRequest\nmessages.1.assistant.audio\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.function_call\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.refusal\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden\nmessages.1.assistant.annotations\n  Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.11/v/extra_forbidden'}
+Cela peut indiquer que le modèle ne supporte pas le function calling ou que l'API n'est pas compatible.
+
+https://discuss.vllm.ai/t/the-openai-endpoint-doesnt-support-function-strict-setting/959

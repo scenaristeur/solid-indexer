@@ -2,6 +2,14 @@
 
 - https://docs.crewai.com/en/concepts/agents#agent-tools
 
+sortir du .venv
+
+crewai run
+
+creawi server mcp manager https://github.com/adam-paterson/mcp-crew-ai
+
+incompatibilité VLLM and tools : https://discuss.vllm.ai/t/the-openai-endpoint-doesnt-support-function-strict-setting/959
+
 Welcome to the FirstCrew Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
 
 ## Installation

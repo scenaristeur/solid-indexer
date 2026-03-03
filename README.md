@@ -41,7 +41,7 @@ CHAT_MODEL=provider/MyModel-3-8B-Instruct-2512
 
 python -m venv .venv
 . .venv/bin/activate
-python install -r requirements.txt
+pip install -r requirements.txt
 
 # lancer l'assistant
 (.venv)~/dev/solid-indexer$ ./assistant.sh
@@ -261,3 +261,5 @@ test_function_calling_model.py
 # bug
 
 - multiple TOOL_CALLS in centent when multiple things to do : https://github.com/scenaristeur/solid-indexer/issues/1
+
+- invaide syntax jose : https://stackoverflow.com/questions/65102969/invalid-syntax-jose-py

@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 base_url=os.getenv("OPENAI_BASE_URL")
 api_key=os.getenv("OPENAI_API_KEY")
-model = os.getenv("MODEL")
+model = os.getenv("MODEL_LARGE_ALIAS1")
 # model ="albert-large"
 
 llm = LLM(

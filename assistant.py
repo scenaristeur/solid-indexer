@@ -12,6 +12,9 @@ from solid_rag_query import SolidRAG
 from solid_indexer import SolidIndexer
 from tools.internal.commands import ToolsInternalCommands
 
+import coloredlogs
+
+
 load_dotenv()
 
 # CONFIG
@@ -33,7 +36,7 @@ current_path = CONFIG['base_container']
 # https://blog.stephane-robert.info/docs/developper/programmation/python/logging/
 # https://stackoverflow.com/questions/24505145/how-to-limit-log-file-size-in-python
 # https://sametmax.oprax.fr/lencoding-en-python-une-bonne-fois-pour-toute.html
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 handler = RotatingFileHandler(
     CONFIG['log_file'],  # Nom du fichier de log
     mode='a',
@@ -53,6 +56,15 @@ logger.addHandler(handler)
 # logging.getLogger('solid_auth').setLevel(logging.INFO)
 # logging.getLogger('solid_indexer').setLevel(logging.DEBUG)
 
+coloredlogs.install(level='INFO', logger=logger)
+
+# Some examples.
+logger.debug("this is a debugging message")
+logger.info("this is an informational message")
+logger.warning("this is a warning message")
+logger.error("this is an error message")
+logger.critical("this is a critical message")
+
 # MODULES
 session = SolidAuthenticatedSession(
     idp_url=os.getenv("SOLID_IDP_URL"),
@@ -71,7 +83,7 @@ openai_client = OpenAI(
 )
 # chat_model = os.getenv("MODEL")
 # chat_model_small = os.getenv("MODEL_SMALL")
-chat_model = os.getenv("MODEL_SMALL")
+chat_model = os.getenv("MODEL_LARGE")
 til = ToolsInternalCommands()
 
 # LOAD TOOLS
@@ -229,7 +241,7 @@ def call_llm(messages, tool_calls):
 # Appel au LLM avec fonctions
     logger.debug(f"########################### START NEW CALL_LLM with tool_calls already done = { tool_calls}")
     # logger.debug(f"******* TOOLS\n{ json.dumps(tools, indent=4)}\n**********\n")
-    logger.debug(f"******* MESSAGES\n{messages}\n**********\n")
+    logger.debug(f"******* MESSAGES\n{json.dumps(messages, indent=4)}\n**********\n")
     try : 
         response = openai_client.chat.completions.create(
             model=chat_model,
@@ -253,11 +265,15 @@ def call_llm(messages, tool_calls):
             result = call_function(tool_name, arguments)
             logger.debug(f"********** TOOL_CALL RESULT\n{result}\n**********\n")
             # Ajouter la réponse de la fonction à la conversation
-            messages.append(message)  # le message avec tool_call
+            # messages.append(message)  # le message avec tool_call
+            # messages.append({
+            #     "role": message.role,
+            #     "content": message.tool_calls[0].function.arguments
+            # })
             messages.append({
-            "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": tool_call.function.name,
+            "role": "assistant",
+                # "tool_call_id": tool_call.id,
+                # "name": tool_call.function.name,
                 "content": result
             })
             logger.debug(f"******* MESSAGES AFTER TOOL_CALL\n{messages}\n**********\n")
