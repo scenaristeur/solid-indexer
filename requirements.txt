@@ -1,15 +1,15 @@
 # CORE
-chromadb
-requests
-rdflib
-pypdf
-python-dateutil
-beautifulsoup4
-cryptography
-python-jose
-openai
-pytest
-coloredlogs
+chromadb>=1.5.2
+requests>=2.32.5
+rdflib>=7.6.0
+pypdf>=6.7.5
+python-dateutil>=2.9.0.post0
+beautifulsoup4>=4.14.3
+cryptography>=46.0.5
+python-jose>=3.5.0
+openai>=2.24.0
+pytest>=9.0.2
+coloredlogs>=15.0.1
 
 # GUI
 # flask

@@ -263,3 +263,9 @@ test_function_calling_model.py
 - multiple TOOL_CALLS in centent when multiple things to do : https://github.com/scenaristeur/solid-indexer/issues/1
 
 - invaide syntax jose : https://stackoverflow.com/questions/65102969/invalid-syntax-jose-py
+
+# pip packaging
+
+- legacy https://betterscientificsoftware.github.io/python-for-hpc/tutorials/python-pypi-packaging/
+- modern https://medium.com/@ebimsv/building-python-packages-07fbfbb959a9
+- https://packaging.python.org/en/latest/tutorials/packaging-projects/
